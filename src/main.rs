@@ -1,3 +1,6 @@
+use bi_turbo::*;
+
 fn main() {
-    println!("Hello, world!");
+    let mut app = App::new();
+    app.run();
 }
