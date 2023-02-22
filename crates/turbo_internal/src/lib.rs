@@ -8,3 +8,8 @@ pub mod app {
     //! Build biTurbo apps, create plugins, and read events.
     pub use turbo_app::*;
 }
+
+pub mod core {
+    //! Core components and bundles for biTurbo.
+    pub use turbo_core::*;
+}
