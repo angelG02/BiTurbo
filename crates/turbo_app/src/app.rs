@@ -1,4 +1,4 @@
-use turbo_core::prelude::trace::*;
+use turbo_core::trace::*;
 
 pub struct App {
     pub state: String,
