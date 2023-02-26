@@ -1,8 +1,11 @@
-use turbo_core::trace::*;
+
+
+use turbo_core::prelude::trace::*;
+use ecs::*;
 
 pub struct App {
     pub state: String,
-
+    pub world: ecs::world::World
 }
 
 impl App {
@@ -21,6 +24,7 @@ impl App {
 
         Self {
             state: "new".to_string(),
+            world: world::World::new()
         }
     }
 
@@ -28,7 +32,11 @@ impl App {
         self.state = "running".to_string();
 
         while self.state == "running" {
-            
+            // self.world.entities_components.insert(0, Position{x: 0.0, y: 0.0});
+            let entity1 = self.world.add_entity();
+
+            let pos = Position {x: 0.0, y: 0.0};
+            self.world.add_component_by_entity_id(entity1,pos);
             warn!("App is running");
         }
     }
