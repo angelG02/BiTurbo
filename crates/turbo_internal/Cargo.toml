@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 turbo_app = { path = "../turbo_app" }
 turbo_core = { path = "../turbo_core" }
+turbo_window = { path = "../turbo_window" }
 ecs = {path = "../ecs"}

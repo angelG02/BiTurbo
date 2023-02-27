@@ -1,11 +1,9 @@
 [package]
-name = "turbo_app"
+name = "turbo_window"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-turbo_core = { path = "../turbo_core" }
-turbo_window = { path = "../turbo_window" }
-ecs = {path = "../ecs"}
+glfw = "0.51.0"
