@@ -1,5 +1,8 @@
+use std::any::Any;
+
 pub trait Component {
     fn asd(&self);
+    fn as_any(&self) -> &dyn Any;
 }
 
 #[derive(Debug, Clone)]
@@ -11,6 +14,10 @@ pub struct Position {
 impl Component for Position {
     fn asd(&self) {
         todo!()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
