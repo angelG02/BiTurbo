@@ -1,14 +1,14 @@
 use turbo_core::prelude::trace::*;
-use turbo_window::prelude::*;
+use turbo_window::prelude::{Window, Event, EventDispatcher};
 use ecs::*;
 
-pub struct App {
+pub struct App<'a> {
     pub state: String,
-    pub world: ecs::world::World,
-    pub window: Window,
+    pub world: world::World,
+    pub window: Window<'a>,
 }
 
-impl App {
+impl<'a> App<'a> {
     pub fn new() -> Self {
         // Loging initialization
         let subscriber = FmtSubscriber::builder()
@@ -25,8 +25,18 @@ impl App {
         }
     }
 
+    pub fn on_event(event: &Event) {
+        let mut dispatcher = EventDispatcher::new(event);
+
+        match *event {
+            Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
+            _ => info!("{:?}", event),
+        }
+    }
+
     pub fn run(&mut self) {
         self.state = "running".to_string();
+        self.window.set_event_callback(&Self::on_event);
 
         // Timer for frame time and render time
         let mut current_time = std::time::Instant::now();
@@ -36,22 +46,10 @@ impl App {
             // Calculate frame time (delta time)
             let new_time = std::time::Instant::now();
             let frame_time = (new_time - current_time).as_nanos();
-            let delta_time = frame_time as f32 / 1000000000.0;
+            let _delta_time = frame_time as f32 / 1000000000.0;
             current_time = new_time;
 
-            trace!("Frame time: {delta_time}s");
-
-            // self.world.entities_components.insert(0, Position{x: 0.0, y: 0.0});
-            // let entity1 = self.world.add_entity();
-            // let entity1 = self.world.add_entity();
-            // let entity1 = self.world.add_entity();
-            let entity1 = self.world.add_entity();
-
-            //let entities_with_trans: Query<Transform> = world.get_from_id(id)
-            //let entities_with_trans: Query<u32, Transform> = world.get()
-
-            let pos = Position {x: 0.0, y: 0.0};
-            self.world.add_component_by_entity_id(entity1,pos);
+            //trace!("Frame time: {delta_time}s");
 
             self.window.poll_events();
             let pos_comp: &Position = self.world.get_component_by_entity_id(entity1).unwrap();
@@ -60,4 +58,13 @@ impl App {
             warn!("App is running {:?}", pos_comp);
         }
     }
+
+    fn on_window_resize(event: &Event) -> bool {
+        match event {
+            Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
+            _ => {}
+        }        
+        false
+    }
+    
 }
