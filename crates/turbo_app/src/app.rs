@@ -52,10 +52,6 @@ impl<'a> App<'a> {
             //trace!("Frame time: {delta_time}s");
 
             self.window.poll_events();
-            let pos_comp: &Position = self.world.get_component_by_entity_id(entity1).unwrap();
-            println!("This is my successful comp: {:?}", pos_comp);
-
-            warn!("App is running {:?}", pos_comp);
         }
     }
 
