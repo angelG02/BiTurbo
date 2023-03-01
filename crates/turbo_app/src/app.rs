@@ -41,24 +41,19 @@ impl App {
 
             trace!("Frame time: {delta_time}s");
 
-            // self.world.entities_components.insert(0, Position{x: 0.0, y: 0.0});
-            // let entity1 = self.world.add_entity();
-            // let entity1 = self.world.add_entity();
-            // let entity1 = self.world.add_entity();
             let entity1 = self.world.add_entity();
 
-            //let entities_with_trans: Query<Transform> = world.get_from_id(id)
-            //let entities_with_trans: Query<u32, Transform> = world.get()
 
             let pos = Position {x: 0.0, y: 0.0};
-            self.world.add_component_by_entity_id(entity1,pos);
+            self.world.add_component_by_entity_id(&entity1,pos);
 
             self.window.poll_events();
-            let pos_comp: &Position = self.world.get_component_by_entity_id(entity1).unwrap();
-            println!("This is my successful comp: {:?}", pos_comp);
-            self.world.remove_entity(entity_id);
 
-            warn!("App is running {:?}", pos_comp);
+            let pos_comp:&Position = self.world.get_component_by_entity_id(&entity1).unwrap();
+            println!("This is my successful comp: {:?}", pos_comp);
+            self.world.remove_entity(entity1);
+            
+            warn!("App is running")
         }
     }
 }

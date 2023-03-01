@@ -1,4 +1,4 @@
-use std::{collections::HashMap, any::{Any, TypeId}};
+use std::{collections::HashMap, any::{Any}};
 
 use crate::{Component};
 
@@ -32,7 +32,7 @@ impl World {
         self.registry.remove(&entity_id);
     }
 
-    pub fn add_component_by_entity_id<T: Component + 'static>(&mut self, entity_id: u32, component:  T) {
+    pub fn add_component_by_entity_id<T: Component + 'static>(&mut self, entity_id: &u32, component:  T) {
 
        if let Some(components) = self.registry.get_mut(&entity_id)
        {
@@ -43,7 +43,7 @@ impl World {
        }       
     }
 
-    pub fn get_component_by_entity_id<T: Component + 'static>(&mut self, entity_id: u32) -> Option<&T>  {
+    pub fn get_component_by_entity_id<T: Component + 'static>(&mut self, entity_id: &u32) -> Option<&T>  {
         if let Some(components) = self.registry.get(&entity_id) {
             for component in components.iter() {
                 if let Some(c) = component.as_any().downcast_ref::<T>() {
