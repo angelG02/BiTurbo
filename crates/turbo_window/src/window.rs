@@ -134,10 +134,6 @@ impl<'a> Window<'a> {
                 _ => {}
             }
         }
-        // if self.resized {
-        //     self.window.set_size(self.width as i32, self.height as i32);
-        //     self.resized = false;
-        // }
     }
 
     pub fn get_glfw_window(&self) -> &GLFWWindow {
