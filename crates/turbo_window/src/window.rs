@@ -1,5 +1,5 @@
+use glfw::{Action, Context, Glfw, Key, Window as GLFWWindow, WindowEvent};
 use std::sync::mpsc::Receiver;
-use glfw::{Action, Context, Key, Window as GLFWWindow, WindowEvent, Glfw};
 
 use crate::event::Event;
 
@@ -11,20 +11,15 @@ pub struct Window<'a> {
     context: Glfw,
     window: GLFWWindow,
     events: Receiver<(f64, WindowEvent)>,
-    event_callback: Option<&'a dyn Fn(&Event)>
+    event_callback: Option<&'a dyn Fn(&Event)>,
 }
 
 impl<'a> Window<'a> {
     pub fn new(width: u32, height: u32, name: String) -> Self {
-
         let mut glfw = glfw::init(glfw::LOG_ERRORS).unwrap();
 
-        let (mut window, events) = 
-            glfw.create_window(
-                width, 
-                height, 
-                &name, 
-                glfw::WindowMode::Windowed)
+        let (mut window, events) = glfw
+            .create_window(width, height, &name, glfw::WindowMode::Windowed)
             .expect("Failed to create GLFW window.");
 
         window.set_all_polling(true);
@@ -38,7 +33,7 @@ impl<'a> Window<'a> {
             context: glfw,
             window,
             events,
-            event_callback: None
+            event_callback: None,
         }
     }
 
@@ -67,55 +62,51 @@ impl<'a> Window<'a> {
                     }
                 }
 
-                glfw::WindowEvent::Key(key, _scancode, action, _modifiers) => {
-                    match action {
-                        Action::Press => {
-                            let event = Event::KeyPressed(key, 0);
-                            if let Some(event_callback) = self.event_callback {
-                                event_callback(&event);
-                            }
-                        }
-
-                        Action::Release => {
-                            let event = Event::KeyReleased(key);
-                            if let Some(event_callback) = self.event_callback {
-                                event_callback(&event);
-                            }
-                        }
-
-                        Action::Repeat => {
-                            let event = Event::KeyPressed(key, 1);
-                            if let Some(event_callback) = self.event_callback {
-                                event_callback(&event);
-                            }
+                glfw::WindowEvent::Key(key, _scancode, action, _modifiers) => match action {
+                    Action::Press => {
+                        let event = Event::KeyPressed(key, 0);
+                        if let Some(event_callback) = self.event_callback {
+                            event_callback(&event);
                         }
                     }
-                }
 
-                glfw::WindowEvent::MouseButton(key, action, _mods) => {
-                    match action {
-                        Action::Press => {
-                            let event = Event::MouseButtonPressed(key);
-                            if let Some(event_callback) = self.event_callback {
-                                event_callback(&event);
-                            }
-                        }
-
-                        Action::Release => {
-                            let event = Event::MouseButtonReleased(key);
-                            if let Some(event_callback) = self.event_callback {
-                                event_callback(&event);
-                            }
-                        }
-
-                        Action::Repeat => {
-                            let event = Event::MouseButtonPressed(key);
-                            if let Some(event_callback) = self.event_callback {
-                                event_callback(&event);
-                            }
+                    Action::Release => {
+                        let event = Event::KeyReleased(key);
+                        if let Some(event_callback) = self.event_callback {
+                            event_callback(&event);
                         }
                     }
-                }
+
+                    Action::Repeat => {
+                        let event = Event::KeyPressed(key, 1);
+                        if let Some(event_callback) = self.event_callback {
+                            event_callback(&event);
+                        }
+                    }
+                },
+
+                glfw::WindowEvent::MouseButton(key, action, _mods) => match action {
+                    Action::Press => {
+                        let event = Event::MouseButtonPressed(key);
+                        if let Some(event_callback) = self.event_callback {
+                            event_callback(&event);
+                        }
+                    }
+
+                    Action::Release => {
+                        let event = Event::MouseButtonReleased(key);
+                        if let Some(event_callback) = self.event_callback {
+                            event_callback(&event);
+                        }
+                    }
+
+                    Action::Repeat => {
+                        let event = Event::MouseButtonPressed(key);
+                        if let Some(event_callback) = self.event_callback {
+                            event_callback(&event);
+                        }
+                    }
+                },
 
                 glfw::WindowEvent::Scroll(xoffset, yoffset) => {
                     let event = Event::MouseScrolled(xoffset as f32, yoffset as f32);

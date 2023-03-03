@@ -1,11 +1,15 @@
-use turbo_core::prelude::{trace::*, Layer};
-use turbo_window::prelude::{Window, Event, EventDispatcher};
 use ecs::*;
+use turbo_core::{
+    prelude::{trace::*, LayerStack},
+    Kur,
+};
+use turbo_window::prelude::{Event, EventDispatcher, Window};
 
 pub struct App<'a> {
     pub world: world::World,
     pub window: Window<'a>,
-    event_call: Option<&'a dyn Fn(&Event)>
+    event_call: Option<&'a dyn Fn(&Event)>,
+    layer_stack: LayerStack,
 }
 
 impl<'a> App<'a> {
@@ -15,20 +19,39 @@ impl<'a> App<'a> {
             .with_max_level(Level::TRACE)
             .finish();
 
-        subscriber::set_global_default(subscriber)
-            .expect("setting default subscriber failed");
+        subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
         Self {
             world: world::World::new(),
             window: Window::new(1080, 720, "Mercedes s500".to_owned()),
-            event_call: None
+            event_call: None,
+            layer_stack: LayerStack::new(),
         }
     }
 
     pub fn run(&mut self) {
+        let layer1: Kur = Kur {
+            debug_name: "asd1".to_owned(),
+        };
+        let layer2: Kur = Kur {
+            debug_name: "asd2".to_owned(),
+        };
+        let layer3: Kur = Kur {
+            debug_name: "asd3".to_owned(),
+        };
+
+        let mut_ref = &mut self.layer_stack;
+
+        mut_ref.push_layer(Box::new(layer1));
+        mut_ref.push_layer(Box::new(layer2));
+        mut_ref.push_layer(Box::new(layer3));
+
+        for layer in &mut self.layer_stack {
+            layer.on_attach();
+        }
 
         // ---------Setup event callback for event dispatching and layer propagation---------
-        self.event_call = Some(&|event: &Event| { 
+        self.event_call = Some(&|event: &Event| {
             let mut dispatcher = EventDispatcher::new(event);
 
             match *event {
@@ -45,7 +68,6 @@ impl<'a> App<'a> {
         let mut current_time = std::time::Instant::now();
 
         while !self.window.should_close() {
-
             // Calculate frame time (delta time)
             let new_time = std::time::Instant::now();
             let frame_time = (new_time - current_time).as_nanos();
@@ -62,8 +84,7 @@ impl<'a> App<'a> {
         match event {
             Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
             _ => {}
-        }        
+        }
         false
     }
-    
 }
