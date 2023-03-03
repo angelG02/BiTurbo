@@ -17,7 +17,7 @@ impl Component for Position {
         self
     }
 }
-
+#[derive(Debug, Clone)]
 pub struct Transform {
     pub position: glam::Vec3,
     //pub rotation: glam::Quat,
@@ -31,7 +31,7 @@ impl Component for Transform {
 }
 
 impl Transform {
-    fn new (pos: Option<glam::Vec3>, /*rot: Option<glam::Quat>*/ scl: Option<glam::Vec3>) -> Self {
+   pub fn new (pos: Option<glam::Vec3>, /*rot: Option<glam::Quat>*/ scl: Option<glam::Vec3>) -> Self {
         let mut pos_new = glam::Vec3::new(0.0,0.0,0.0);
         //let mut rot_new = glam::Quat::from_mat4()
         let mut scl_new = glam::Vec3::new(0.0,0.0,0.0);
