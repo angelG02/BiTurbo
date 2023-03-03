@@ -1,19 +1,26 @@
-trait System {} 
+use crate::TransformComponent;
 
-pub struct MovementSystem {
-
+pub trait System {
+    fn update(&mut self);
 }
 
-impl System for MovementSystem {
-    
+pub struct MovementTestSystem {
+    pub transform: TransformComponent,
+    pub velocity: f32,
 }
 
-impl MovementSystem {
-    // fn new () ->Self {
-    //     return Self {};
-    // }
+impl System for MovementTestSystem {
+    fn update(&mut self) {
+        println!("IS it updating ? {:?}", self.transform.position.x);
+        self.transform.position.x += self.velocity;
+    }
+}
 
-    // fn update_pos() {
-
-    // }
+impl MovementTestSystem {
+    pub fn new() -> Self {
+        Self {
+            transform: TransformComponent::new(None, None),
+            velocity: 3.0,
+        }
+    }
 }
