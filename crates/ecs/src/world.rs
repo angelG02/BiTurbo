@@ -74,6 +74,19 @@ impl World {
         return Some(desired_components);
     }
 
+    pub fn get_all_entities_with_component<T: Component + 'static>(&self) -> Option<Vec<&u32>> {
+        let mut entities: Vec<&u32> = Vec::new();
+        for (entity, componments) in &self.registry {
+            for comp in componments {
+                if comp.as_any().type_id() == TypeId::of::<T>() {
+                    entities.push(entity);
+                }
+            }
+        }
+
+        return Some(entities);
+    }
+
     pub fn get_component_by_entity_id<T: Component + 'static>(
         &mut self,
         entity_id: &u32,

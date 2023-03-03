@@ -41,47 +41,25 @@ impl App {
 
             trace!("Frame time: {delta_time}s");
             let entity1 = self.world.add_entity();
-            let transform_comp: Transform = Transform::new(None, None);
-
-            self.world
-                .add_component_by_entity_id(&entity1, transform_comp);
-
-            self.world
-                .remove_component_by_entity_id::<Transform>(&entity1);
-
-            self.world.add_component_by_entity_id(
-                &entity1,
-                Transform::new(Some(glam::Vec3::new(1.0, 1.0, 1.0)), None),
-            );
-
-            let new_comp: Option<&Transform> = self.world.get_component_by_entity_id(&entity1);
-
-            println!("This is my comp trans {:?}", new_comp);
-
             let entity2 = self.world.add_entity();
             let entity3 = self.world.add_entity();
 
-            self.world.add_component_by_entity_id(
-                &entity2,
-                Transform::new(Some(glam::Vec3::new(2.0, 2.0, 2.0)), None),
-            );
+            self.world
+                .add_component_by_entity_id(&entity1, Transform::new(None, None));
+
             self.world.add_component_by_entity_id(
                 &entity3,
-                Transform::new(Some(glam::Vec3::new(3.0, 3.0, 3.0)), None),
+                Transform::new(Some(glam::Vec3::new(2.0, 2.0, 2.0)), None),
             );
 
-            let comps = self
-                .world
-                .get_all_components_of_type::<Transform>()
-                .unwrap();
+            let entities_with_transform = self.world.get_all_entities_with_component::<Transform>();
 
-            println!("Here are my components {:?}", comps);
+            println!(
+                "All entities with transform component are {:?}",
+                entities_with_transform
+            );
 
             //self.window.poll_events();
-            self.world.remove_entity(entity1);
-            self.world.remove_entity(entity2);
-            self.world.remove_entity(entity3);
-
             warn!("App is running")
             // }
         }
