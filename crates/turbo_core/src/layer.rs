@@ -1,39 +1,45 @@
+use std::collections::HashMap;
+
 pub use turbo_window::Event;
 
 pub trait Layer {
-    fn on_attach(&mut self);
+    fn on_attach(&self);
     fn on_detach(&self);
-    fn on_update(&self, delta_time: f32);
+    fn on_tick(&self, delta_time: f32);
     fn on_event(&self, event: &Event);
 }
 
+/// Structure responsible for managing layers and overlays
+///
+/// Layers are inserted in the front of the vector.
+/// Overlays are pushed back
 pub struct LayerStack {
     layers: Vec<Box<dyn Layer>>,
+    names: HashMap<String, usize>,
 }
 
 impl LayerStack {
     pub fn new() -> Self {
-        LayerStack { layers: vec![] }
+        LayerStack {
+            layers: vec![],
+            names: HashMap::new(),
+        }
     }
 
-    pub fn push_layer(&mut self, layer: Box<dyn Layer>) {
+    pub fn push_layer(&mut self, layer_name: &str, layer: Box<dyn Layer>) {
+        layer.on_attach();
         self.layers.push(layer);
+        self.names
+            .insert(layer_name.to_owned(), self.layers.len() - 1);
     }
 
-    pub fn pop_layer(&mut self, _layer: Box<&dyn Layer>) {
-        // if let Some(index) = self
-        //     .layers
-        //     .iter()
-        //     .position(|l| l as *const dyn Layer == *layer as *const dyn Layer)
-        // {
-        //     self.layers.remove(index);
-        // }
-        todo!()
-
-        // Data flow is weird...should the layer stack own the layers or hold a ref to them?
-        // If it holds a ref then where are layers created? They cannot be created with a lifetime
-        // that would be shorter than the one of the App (which holds the layer stack) but a layer
-        // would need to be created in app right? Cherno -> ImGuiLayer is created on App::init
+    pub fn pop_layer(&mut self, layer_name: &str) {
+        if let Some(index) = self.names.remove(layer_name) {
+            if index < self.layers.len() {
+                let layer = self.layers.remove(index);
+                layer.on_detach();
+            }
+        }
     }
 }
 
@@ -138,27 +144,5 @@ impl<'a> DoubleEndedIterator for LayerStackMutIterator<'a> {
         } else {
             None
         }
-    }
-}
-
-pub struct Kur {
-    pub debug_name: String,
-}
-
-impl Layer for Kur {
-    fn on_attach(&mut self) {
-        println!("Name: {0}", self.debug_name);
-    }
-
-    fn on_detach(&self) {
-        todo!()
-    }
-
-    fn on_event(&self, _event: &Event) {
-        todo!()
-    }
-
-    fn on_update(&self, _delta_time: f32) {
-        todo!()
     }
 }

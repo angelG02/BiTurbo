@@ -1,8 +1,5 @@
 use ecs::*;
-use turbo_core::{
-    prelude::{trace::*, LayerStack},
-    Kur,
-};
+use turbo_core::prelude::{trace::*, LayerStack};
 use turbo_window::prelude::{Event, EventDispatcher, Window};
 
 pub struct App<'a> {
@@ -30,26 +27,6 @@ impl<'a> App<'a> {
     }
 
     pub fn run(&mut self) {
-        let layer1: Kur = Kur {
-            debug_name: "asd1".to_owned(),
-        };
-        let layer2: Kur = Kur {
-            debug_name: "asd2".to_owned(),
-        };
-        let layer3: Kur = Kur {
-            debug_name: "asd3".to_owned(),
-        };
-
-        let mut_ref = &mut self.layer_stack;
-
-        mut_ref.push_layer(Box::new(layer1));
-        mut_ref.push_layer(Box::new(layer2));
-        mut_ref.push_layer(Box::new(layer3));
-
-        for layer in &mut self.layer_stack {
-            layer.on_attach();
-        }
-
         // ---------Setup event callback for event dispatching and layer propagation---------
         self.event_call = Some(&|event: &Event| {
             let mut dispatcher = EventDispatcher::new(event);
