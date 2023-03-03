@@ -16,6 +16,7 @@ pub trait Layer {
 pub struct LayerStack {
     layers: Vec<Box<dyn Layer>>,
     names: HashMap<String, usize>,
+    insert_index: usize,
 }
 
 impl LayerStack {
@@ -23,14 +24,15 @@ impl LayerStack {
         LayerStack {
             layers: vec![],
             names: HashMap::new(),
+            insert_index: 0,
         }
     }
 
     pub fn push_layer(&mut self, layer_name: &str, layer: Box<dyn Layer>) {
         layer.on_attach();
-        self.layers.push(layer);
-        self.names
-            .insert(layer_name.to_owned(), self.layers.len() - 1);
+        self.layers.insert(self.insert_index, layer);
+        self.names.insert(layer_name.to_owned(), self.insert_index);
+        self.insert_index += 1;
     }
 
     pub fn pop_layer(&mut self, layer_name: &str) {
@@ -38,7 +40,33 @@ impl LayerStack {
             if index < self.layers.len() {
                 let layer = self.layers.remove(index);
                 layer.on_detach();
+                self.insert_index -= 1;
             }
+        }
+    }
+
+    /// Overlays will always be pushed to the back of the Layer Stack (Will always be on top of the layers)
+    pub fn push_overlay(&mut self, overlay_name: &str, overlay: Box<dyn Layer>) {
+        overlay.on_attach();
+        self.layers.push(overlay);
+        self.names
+            .insert(overlay_name.to_owned(), self.layers.len() - 1);
+    }
+
+    pub fn pop_overlay(&mut self, overlay_name: &str) {
+        if let Some(index) = self.names.remove(overlay_name) {
+            if index < self.layers.len() {
+                let layer = self.layers.remove(index);
+                layer.on_detach();
+            }
+        }
+    }
+}
+
+impl Drop for LayerStack {
+    fn drop(&mut self) {
+        for layer in &self.layers {
+            layer.on_detach();
         }
     }
 }
