@@ -1,5 +1,5 @@
 use ecs::*;
-use turbo_core::prelude::{trace::*, LayerStack};
+use turbo_core::prelude::{trace::*, Layer, LayerStack};
 use turbo_window::prelude::{Event, EventDispatcher, Window};
 
 pub struct App<'a> {
@@ -63,5 +63,22 @@ impl<'a> App<'a> {
             _ => {}
         }
         false
+    }
+
+    pub fn push_layer(&mut self, layer_name: &str, layer: Box<dyn Layer>) {
+        self.layer_stack.push_layer(layer_name, layer);
+    }
+
+    pub fn pop_layer(&mut self, layer_name: &str) {
+        self.layer_stack.pop_layer(layer_name);
+    }
+
+    /// Overlays will always be pushed to the back of the Layer Stack (Will always be on top of the layers)
+    pub fn push_overlay(&mut self, overlay_name: &str, overlay: Box<dyn Layer>) {
+        self.layer_stack.push_overlay(overlay_name, overlay);
+    }
+
+    pub fn pop_overlay(&mut self, overlay_name: &str) {
+        self.layer_stack.pop_overlay(overlay_name);
     }
 }
