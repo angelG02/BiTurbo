@@ -2,16 +2,15 @@ use ecs::*;
 use turbo_core::prelude::{trace::*, Layer, LayerStack};
 use turbo_window::prelude::{Event, EventDispatcher, Window};
 
-pub struct App<'a> {
+pub struct App {
     pub world: world::World,
-    pub window: Window<'a>,
-    event_call: Option<&'a dyn Fn(&Event)>,
+    pub window: Window,
     layer_stack: LayerStack,
 }
 
-impl<'a> App<'a> {
+impl App {
     pub fn new() -> Self {
-        // Loging initialization
+        // Logging initialization
         let subscriber = FmtSubscriber::builder()
             .with_max_level(Level::TRACE)
             .finish();
@@ -21,26 +20,24 @@ impl<'a> App<'a> {
         Self {
             world: world::World::new(),
             window: Window::new(1080, 720, "Mercedes s500".to_owned()),
-            event_call: None,
             layer_stack: LayerStack::new(),
         }
     }
 
-    pub fn run(&mut self) {
-        // ---------Setup event callback for event dispatching and layer propagation---------
-        self.event_call = Some(&|event: &Event| {
-            let mut dispatcher = EventDispatcher::new(event);
+    pub fn on_event(&mut self, events: Vec<Event>) {
+        for event in events {
+            for layer in &self.layer_stack {
+                let mut dispatcher = EventDispatcher::new(&event);
 
-            match *event {
-                Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
-                _ => info!("{:?}", event),
+                match event {
+                    Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
+                    _ => layer.on_event(&event),
+                }
             }
-        });
-
-        if let Some(ec) = self.event_call {
-            self.window.set_event_callback(ec);
         }
+    }
 
+    pub fn run(&mut self) {
         // ---------Timer for frame time and render time---------
         let mut current_time = std::time::Instant::now();
 
@@ -53,7 +50,8 @@ impl<'a> App<'a> {
 
             //trace!("Frame time: {delta_time}s");
 
-            self.window.poll_events();
+            let events = self.window.poll_events();
+            self.on_event(events);
         }
     }
 
