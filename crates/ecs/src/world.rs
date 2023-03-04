@@ -4,7 +4,6 @@ use std::{
 };
 
 use crate::Component;
-
 pub struct World {
     pub registry: HashMap<u32, Vec<Box<dyn Component>>>,
     id_counter: u32,

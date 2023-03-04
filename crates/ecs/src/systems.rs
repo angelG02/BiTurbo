@@ -11,7 +11,7 @@ pub struct MovementTestSystem {
 
 impl System for MovementTestSystem {
     fn update(&mut self) {
-        println!("IS it updating ? {:?}", self.transform.position.x);
+        //println!("IS it updating ? {:?}", self.transform.position.x);
         self.transform.position.x += self.velocity;
     }
 }

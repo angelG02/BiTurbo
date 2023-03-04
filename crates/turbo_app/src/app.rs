@@ -41,6 +41,17 @@ impl App {
 
             self.update_systems();
 
+            let entity1 = self.world.add_entity();
+
+            self.world
+                .add_component_by_entity_id(&entity1, TransformComponent::new(None, None));
+
+            let comp = self
+                .world
+                .get_component_by_entity_id::<TransformComponent>(&entity1)
+                .unwrap();
+
+            comp.serialize_transform();
             trace!("Frame time: {delta_time}s");
 
             //self.window.poll_events();
