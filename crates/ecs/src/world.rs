@@ -113,6 +113,18 @@ impl World {
         None
     }
 
+    pub fn has_component<T: Component + 'static>(&self, entity_id: &u32) -> bool {
+        if let Some(components) = self.registry.get(&entity_id) {
+            for component in components.iter() {
+                if let Some(c) = component.as_any().downcast_ref::<T>() {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     pub fn serialize_component(&mut self) {
         //let ser = serde_json::to_string();
 
