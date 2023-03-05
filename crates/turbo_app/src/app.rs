@@ -53,11 +53,8 @@ impl App {
 
             //comp.serialize_transform();
             //self.world.serialize_component(&comp);
-            let check = self.world.has_component::<TransformComponent>(&entity1);
 
-            if check == true {
-                println!("This works");
-            }
+            self.world.serialize_self();
             trace!("Frame time: {delta_time}s");
 
             //self.window.poll_events();

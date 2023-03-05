@@ -3,8 +3,8 @@ use erased_serde::{serialize_trait_object, Serialize};
 use serde_derive::Serialize;
 //use serde::Serialize;
 //use serde::Serialize;
-use std::any::Any;
-pub trait Component: erased_serde::Serialize {
+use std::{any::Any, fmt::Debug};
+pub trait Component: erased_serde::Serialize + Debug {
     fn as_any(&self) -> &dyn Any;
 
     fn as_any_mut(&mut self) -> &mut dyn Any;
@@ -12,9 +12,9 @@ pub trait Component: erased_serde::Serialize {
 serialize_trait_object!(Component);
 #[derive(Serialize, Debug)]
 pub struct TransformComponent {
-    pub position: BiTurboVec3,
+    pub position: SerializedVec3,
     //pub rotation: glam::Quat,
-    pub scale: BiTurboVec3,
+    pub scale: SerializedVec3,
 }
 
 impl Component for TransformComponent {
@@ -29,12 +29,12 @@ impl Component for TransformComponent {
 
 impl TransformComponent {
     pub fn new(
-        pos: Option<BiTurboVec3>,
-        /*rot: Option<glam::Quat>*/ scl: Option<BiTurboVec3>,
+        pos: Option<SerializedVec3>,
+        /*rot: Option<glam::Quat>*/ scl: Option<SerializedVec3>,
     ) -> Self {
-        let mut pos_new = BiTurboVec3::from(glam::Vec3::new(0.0, 0.0, 0.0));
+        let mut pos_new = SerializedVec3::from(glam::Vec3::new(0.0, 0.0, 0.0));
         //let mut rot_new = glam::Quat::from_mat4()
-        let mut scl_new = BiTurboVec3::from(glam::Vec3::new(0.0, 0.0, 0.0));
+        let mut scl_new = SerializedVec3::from(glam::Vec3::new(0.0, 0.0, 0.0));
         if let Some(pos) = pos {
             pos_new = pos;
         }

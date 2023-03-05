@@ -3,10 +3,14 @@ use std::{
     collections::HashMap,
 };
 
-use erased_serde::Serialize;
-use serde_derive::Serialize;
+//use erased_serde::Serialize;
+//use serde::{ser::SerializeStruct, Serializer};
+//use serde_derive::Serialize;
 
 use crate::Component;
+
+use serde::Serialize;
+#[derive(Serialize, Debug)]
 pub struct World {
     pub registry: HashMap<u32, Vec<Box<dyn Component>>>,
     id_counter: u32,
@@ -129,5 +133,11 @@ impl World {
         //let ser = serde_json::to_string();
 
         //println!("IS this serializing? {:?}", ser);
+    }
+
+    pub fn serialize_self(&self) {
+        let ser = serde_json::to_string(&self.registry);
+
+        println!("World: {:?}", self.registry);
     }
 }
