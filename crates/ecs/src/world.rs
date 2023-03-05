@@ -3,6 +3,9 @@ use std::{
     collections::HashMap,
 };
 
+use erased_serde::Serialize;
+use serde_derive::Serialize;
+
 use crate::Component;
 pub struct World {
     pub registry: HashMap<u32, Vec<Box<dyn Component>>>,
@@ -86,10 +89,7 @@ impl World {
         return Some(entities);
     }
 
-    pub fn get_component_by_entity_id<T: Component + 'static>(
-        &mut self,
-        entity_id: &u32,
-    ) -> Option<&T> {
+    pub fn get_component<T: Component + 'static>(&mut self, entity_id: &u32) -> Option<&T> {
         if let Some(components) = self.registry.get(&entity_id) {
             for component in components.iter() {
                 if let Some(c) = component.as_any().downcast_ref::<T>() {
@@ -99,5 +99,23 @@ impl World {
         }
 
         None
+    }
+
+    pub fn get_mut_component<T: Component + 'static>(&mut self, entity_id: &u32) -> Option<&mut T> {
+        if let Some(components) = self.registry.get_mut(&entity_id) {
+            for component in components.iter_mut() {
+                if let Some(c) = component.as_any_mut().downcast_mut::<T>() {
+                    return Some(c);
+                }
+            }
+        }
+
+        None
+    }
+
+    pub fn serialize_component(&mut self) {
+        //let ser = serde_json::to_string();
+
+        //println!("IS this serializing? {:?}", ser);
     }
 }

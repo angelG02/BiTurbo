@@ -48,10 +48,11 @@ impl App {
 
             let comp = self
                 .world
-                .get_component_by_entity_id::<TransformComponent>(&entity1)
+                .get_component::<TransformComponent>(&entity1)
                 .unwrap();
 
-            comp.serialize_transform();
+            //comp.serialize_transform();
+            //self.world.serialize_component(&comp);
             trace!("Frame time: {delta_time}s");
 
             //self.window.poll_events();

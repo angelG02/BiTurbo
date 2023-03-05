@@ -1,18 +1,28 @@
 use super::serialization::*;
-use erased_serde::Serialize;
+use erased_serde::{serialize_trait_object, Serialize};
 use serde_derive::Serialize;
+//use serde::Serialize;
+//use serde::Serialize;
 use std::any::Any;
-pub trait Component: Serialize {
+pub trait Component: erased_serde::Serialize {
     fn as_any(&self) -> &dyn Any;
+
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
+serialize_trait_object!(Component);
 #[derive(Serialize, Debug)]
 pub struct TransformComponent {
     pub position: BiTurboVec3,
     //pub rotation: glam::Quat,
     pub scale: BiTurboVec3,
 }
+
 impl Component for TransformComponent {
     fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 }
