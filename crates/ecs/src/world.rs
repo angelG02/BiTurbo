@@ -3,10 +3,6 @@ use std::{
     collections::HashMap,
 };
 
-//use erased_serde::Serialize;
-//use serde::{ser::SerializeStruct, Serializer};
-//use serde_derive::Serialize;
-
 use crate::Component;
 
 use serde::Serialize;
@@ -38,11 +34,7 @@ impl World {
         self.registry.remove(&entity_id);
     }
 
-    pub fn add_component_by_entity_id<T: Component + 'static>(
-        &mut self,
-        entity_id: &u32,
-        component: T,
-    ) {
+    pub fn add_component<T: Component + 'static>(&mut self, entity_id: &u32, component: T) {
         if let Some(components) = self.registry.get_mut(&entity_id) {
             if !components
                 .iter()
@@ -53,7 +45,7 @@ impl World {
         }
     }
 
-    pub fn remove_component_by_entity_id<T: Component + 'static>(&mut self, entity_id: &u32) {
+    pub fn remove_component<T: Component + 'static>(&mut self, entity_id: &u32) {
         if let Some(components) = self.registry.get_mut(entity_id) {
             if let Some(comp_index) = components
                 .iter()
@@ -120,7 +112,7 @@ impl World {
     pub fn has_component<T: Component + 'static>(&self, entity_id: &u32) -> bool {
         if let Some(components) = self.registry.get(&entity_id) {
             for component in components.iter() {
-                if let Some(c) = component.as_any().downcast_ref::<T>() {
+                if let Some(_c) = component.as_any().downcast_ref::<T>() {
                     return true;
                 }
             }
@@ -136,8 +128,8 @@ impl World {
     }
 
     pub fn serialize_self(&self) {
-        let ser = serde_json::to_string(&self.registry);
+        let ser = serde_json::to_string(&self);
 
-        println!("World: {:?}", self.registry);
+        println!("World: {:?}", ser);
     }
 }

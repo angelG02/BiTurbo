@@ -1,5 +1,5 @@
 use super::serialization::*;
-use erased_serde::{serialize_trait_object, Serialize};
+use erased_serde::serialize_trait_object;
 use serde_derive::Serialize;
 //use serde::Serialize;
 //use serde::Serialize;
@@ -59,12 +59,3 @@ impl TransformComponent {
         println!("Serialized data {:?}", test);
     }
 }
-
-// pub struct Velocity {
-//     x : f32,
-//     y: f32,
-// }
-
-// impl Component for Velocity {
-
-// }
