@@ -1,6 +1,7 @@
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
+    fs::File,
 };
 
 use crate::Component;
@@ -122,14 +123,15 @@ impl World {
     }
 
     pub fn serialize_component(&mut self) {
-        //let ser = serde_json::to_string();
-
-        //println!("IS this serializing? {:?}", ser);
+        todo!()
     }
 
     pub fn serialize_self(&self) {
-        let ser = serde_json::to_string(&self);
+        let file = File::create("world.json").unwrap();
+        let json = serde_json::to_writer(file, &self);
+    }
 
-        println!("World: {:?}", ser);
+    pub fn desirialize_self(&self) {
+        todo!()
     }
 }

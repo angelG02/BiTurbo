@@ -46,10 +46,10 @@ impl App {
             self.world
                 .add_component(&entity1, TransformComponent::new(None, None));
 
-            let comp = self
-                .world
-                .get_component::<TransformComponent>(&entity1)
-                .unwrap();
+            // let comp = self
+            //     .world
+            //     .get_component::<TransformComponent>(&entity1)
+            //     .unwrap();
 
             //comp.serialize_transform();
             //self.world.serialize_component(&comp);
