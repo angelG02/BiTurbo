@@ -2,24 +2,38 @@ use std::collections::HashMap;
 
 pub use turbo_window::Event;
 
+/// Defines the functions that must be implemented by a layer
 pub trait Layer {
+    /// Called when the layer is attached to the LayerStack
     fn on_attach(&self);
+
+    /// Called when the layer is detached from the LayerStack
     fn on_detach(&self);
+
+    /// Called on every frame
+    ///
+    /// # Arguments
+    ///
+    /// * `delta_time` - The time elapsed since the last frame in seconds
     fn on_tick(&self, delta_time: f32);
+
+    /// Called when an event occurs
+    ///
+    /// # Arguments
+    ///
+    /// * `event` - The input event that occurred
     fn on_event(&self, event: &Event);
 }
 
-/// Structure responsible for managing layers and overlays
-///
-/// Layers are inserted in the front of the vector.
-/// Overlays are pushed back
+/// Represents a stack of layers
 pub struct LayerStack {
-    layers: Vec<Box<dyn Layer>>,
-    names: HashMap<String, usize>,
-    insert_index: usize,
+    layers: Vec<Box<dyn Layer>>,   // The list of layers in the stack
+    names: HashMap<String, usize>, // A map of layer names to their indices in the list
+    insert_index: usize,           // The index at which to insert new layers
 }
 
 impl LayerStack {
+    /// Creates a new empty LayerStack
     pub fn new() -> Self {
         LayerStack {
             layers: vec![],
@@ -28,6 +42,12 @@ impl LayerStack {
         }
     }
 
+    /// Adds a layer to the top of the stack
+    ///
+    /// # Arguments
+    ///
+    /// * `layer_name` - The name of the layer
+    /// * `layer` - A boxed instance of the layer
     pub fn push_layer(&mut self, layer_name: &str, layer: Box<dyn Layer>) {
         layer.on_attach();
         self.layers.insert(self.insert_index, layer);
@@ -35,6 +55,11 @@ impl LayerStack {
         self.insert_index += 1;
     }
 
+    /// Removes a layer from the stack
+    ///
+    /// # Arguments
+    ///
+    /// * `layer_name` - The name of the layer to remove
     pub fn pop_layer(&mut self, layer_name: &str) {
         if let Some(index) = self.names.remove(layer_name) {
             if index < self.layers.len() {
@@ -45,7 +70,14 @@ impl LayerStack {
         }
     }
 
+    /// Adds an overlay to the top of the stack
+    ///
     /// Overlays will always be pushed to the back of the Layer Stack (Will always be on top of the layers)
+    ///
+    /// # Arguments
+    ///
+    /// * `overlay_name` - The name of the overlay
+    /// * `overlay` - A boxed instance of the overlay
     pub fn push_overlay(&mut self, overlay_name: &str, overlay: Box<dyn Layer>) {
         overlay.on_attach();
         self.layers.push(overlay);
@@ -53,6 +85,11 @@ impl LayerStack {
             .insert(overlay_name.to_owned(), self.layers.len() - 1);
     }
 
+    /// Removes an overlay from the stack
+    ///
+    /// # Arguments
+    ///
+    /// * `overlay_name` - The name of the overlay to remove
     pub fn pop_overlay(&mut self, overlay_name: &str) {
         if let Some(index) = self.names.remove(overlay_name) {
             if index < self.layers.len() {

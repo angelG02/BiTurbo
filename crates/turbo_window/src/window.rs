@@ -14,6 +14,17 @@ pub struct Window {
 }
 
 impl Window {
+    /// Creates a new Window with the specified dimensions and name.
+    ///
+    /// # Arguments
+    ///
+    /// * `width` - The width of the window.
+    /// * `height` - The height of the window.
+    /// * `name` - The name of the window.
+    ///
+    /// # Returns
+    ///
+    /// A new [`Window`] instance.
     pub fn new(width: u32, height: u32, name: String) -> Self {
         let mut glfw = glfw::init(glfw::LOG_ERRORS).unwrap();
 
@@ -35,6 +46,13 @@ impl Window {
         }
     }
 
+    /// Polls for pending events happening on the Window (Key, Mouse, Resize, Close...)
+    /// See [`Event`]
+    ///
+    /// # Returns
+    ///
+    /// A [`Vec<Event>`] representing the input events that
+    /// occurred since the last call to this method.
     pub fn poll_events(&mut self) -> Vec<Event> {
         self.context.poll_events();
 
@@ -109,10 +127,12 @@ impl Window {
         turbo_events
     }
 
+    /// Returns a reference to the underlying GLFW window object.
     pub fn get_glfw_window(&self) -> &GLFWWindow {
         &self.window
     }
 
+    /// Returns whether the user has requested that the window be closed.
     pub fn should_close(&self) -> bool {
         self.window.should_close()
     }
