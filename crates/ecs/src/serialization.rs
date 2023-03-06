@@ -1,6 +1,9 @@
 use glam::Vec3;
-use serde::ser::{Serialize, SerializeStruct};
-#[derive(Debug)]
+use serde::{
+    ser::{Serialize, SerializeStruct},
+    Deserialize,
+};
+#[derive(Debug, Deserialize)]
 pub struct SerializedVec3 {
     pub x: f32,
     pub y: f32,
@@ -36,3 +39,19 @@ impl Serialize for SerializedVec3 {
         s.end()
     }
 }
+
+// impl Deserialize for SerializedVec3 {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: serde::Deserializer<'de>,
+//     {
+//     }
+// }
+
+// impl Deserialize for SerializedVec3 {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//         where
+//             D: serde::Deserializer<'de> {
+//         let mut ds = deserializer.deserialize_struct(name, fields, visitor)
+//     }
+// }

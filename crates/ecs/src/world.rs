@@ -6,8 +6,8 @@ use std::{
 
 use crate::Component;
 
-use serde::Serialize;
-#[derive(Serialize, Debug)]
+use serde::{Deserialize, Serialize};
+#[derive(Serialize, Deserialize, Debug)]
 pub struct World {
     pub registry: HashMap<u32, Vec<Box<dyn Component>>>,
     id_counter: u32,
