@@ -128,15 +128,16 @@ impl World {
         todo!()
     }
 
-    pub fn serialize_self(&self) {
-        let file = File::create("world.json").unwrap();
+    pub fn serialize(&self, file_path: &str) {
+        let file = File::create(file_path).unwrap();
         let json = serde_json::to_writer(file, &self);
     }
 
-    pub fn desirialize_self(&mut self) {
-        let file = File::open("world.json").unwrap();
+    pub fn desirialize(&mut self, file_path: &str) {
+        let file = File::open(file_path).unwrap();
         let reader = BufReader::new(file);
         let json: Result<World, serde_json::Error> = serde_json::from_reader(reader);
+        println!("This is world: {:?}", json);
     }
 
     // let file = File::open(path)?;

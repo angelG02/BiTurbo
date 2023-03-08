@@ -30,6 +30,8 @@ impl App {
 
         // Timer for frame time and render time
         let mut current_time = std::time::Instant::now();
+        let entity1 = self.world.add_entity();
+        let entity2 = self.world.add_entity();
 
         //while !self.window.should_close() {
         loop {
@@ -41,27 +43,9 @@ impl App {
 
             self.update_systems();
 
-            let entity1 = self.world.add_entity();
-
-            self.world
-                .add_component(&entity1, TransformComponent::new(None, None));
-            println!("This is world: {:?}", self.world);
-
-            //comp.serialize_transform();
-            //self.world.serialize_component(&comp);
-
-            let comp = self
-                .world
-                .get_mut_component::<TransformComponent>(&entity1)
-                .unwrap();
-
-            comp.position.x += 3.0;
-
-            if comp.position.x >= 4.0 {
-                self.world.desirialize_self();
-                println!("This is world: {:?}", self.world);
-            }
-            self.world.serialize_self();
+            // if comp.position.x >= 4.0 {
+            //     self.world.desirialize_self();
+            // }
 
             trace!("Frame time: {delta_time}s");
 
