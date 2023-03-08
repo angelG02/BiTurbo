@@ -2,11 +2,13 @@ use std::{
     any::{Any, TypeId},
     collections::HashMap,
     fs::File,
+    io::BufReader,
 };
 
 use crate::Component;
 
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct World {
     pub registry: HashMap<u32, Vec<Box<dyn Component>>>,
@@ -131,7 +133,15 @@ impl World {
         let json = serde_json::to_writer(file, &self);
     }
 
-    pub fn desirialize_self(&self) {
-        todo!()
+    pub fn desirialize_self(&mut self) {
+        let file = File::open("world.json").unwrap();
+        let reader = BufReader::new(file);
+        let json: Result<World, serde_json::Error> = serde_json::from_reader(reader);
     }
+
+    // let file = File::open(path)?;
+    // let reader = BufReader::new(file);
+
+    // // Read the JSON contents of the file as an instance of `User`.
+    // let u = serde_json::from_reader(reader)?;
 }

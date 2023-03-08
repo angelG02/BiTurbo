@@ -45,16 +45,24 @@ impl App {
 
             self.world
                 .add_component(&entity1, TransformComponent::new(None, None));
-
-            // let comp = self
-            //     .world
-            //     .get_component::<TransformComponent>(&entity1)
-            //     .unwrap();
+            println!("This is world: {:?}", self.world);
 
             //comp.serialize_transform();
             //self.world.serialize_component(&comp);
 
+            let comp = self
+                .world
+                .get_mut_component::<TransformComponent>(&entity1)
+                .unwrap();
+
+            comp.position.x += 3.0;
+
+            if comp.position.x >= 4.0 {
+                self.world.desirialize_self();
+                println!("This is world: {:?}", self.world);
+            }
             self.world.serialize_self();
+
             trace!("Frame time: {delta_time}s");
 
             //self.window.poll_events();
