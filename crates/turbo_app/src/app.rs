@@ -30,8 +30,6 @@ impl App {
 
         // Timer for frame time and render time
         let mut current_time = std::time::Instant::now();
-        let entity1 = self.world.add_entity();
-        let entity2 = self.world.add_entity();
 
         //while !self.window.should_close() {
         loop {

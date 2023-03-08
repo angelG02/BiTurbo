@@ -1,14 +1,9 @@
-use std::{
-    any::{Any, TypeId},
-    collections::HashMap,
-    fs::File,
-    io::BufReader,
-};
+use std::{any::TypeId, collections::HashMap, fs::File, io::BufReader};
 
 use crate::Component;
 
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+//use serde_json::json;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct World {
     pub registry: HashMap<u32, Vec<Box<dyn Component>>>,
@@ -131,6 +126,7 @@ impl World {
     pub fn serialize(&self, file_path: &str) {
         let file = File::create(file_path).unwrap();
         let json = serde_json::to_writer(file, &self);
+        println!("This is world serialized: {:?}", json);
     }
 
     pub fn desirialize(&mut self, file_path: &str) {
