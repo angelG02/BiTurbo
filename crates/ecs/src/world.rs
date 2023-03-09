@@ -123,17 +123,27 @@ impl World {
         todo!()
     }
 
-    pub fn serialize(&self, file_path: &str) {
-        let file = File::create(file_path).unwrap();
-        let json = serde_json::to_writer(file, &self);
-        println!("This is world serialized: {:?}", json);
+    pub fn serialize(&self, file_path: &str) -> Result<(), &str> {
+        if let Ok(file) = File::create(file_path) {
+            let _json = serde_json::to_writer(file, &self).unwrap();
+            //println!("This is world serialized: {:?}", json);
+            return Ok(());
+        } else {
+            return Err("The file does not exist");
+        }
     }
 
-    pub fn desirialize(&mut self, file_path: &str) {
-        let file = File::open(file_path).unwrap();
-        let reader = BufReader::new(file);
-        let json: Result<World, serde_json::Error> = serde_json::from_reader(reader);
-        println!("This is world: {:?}", json);
+    pub fn desirialize(&mut self, file_path: &str) -> Result<(), &str> {
+        if let Ok(file) = File::open(file_path) {
+            let reader = BufReader::new(file);
+            let _json: Result<World, serde_json::Error> = serde_json::from_reader(reader);
+            //println!("This is world: {:?}", json);
+            return Ok(());
+        } else {
+            return Err(
+                "The file you tried to access does not exist, or the file path is incorrect",
+            );
+        }
     }
 
     // let file = File::open(path)?;

@@ -68,10 +68,4 @@ impl TransformComponent {
             scale: scl_new,
         }
     }
-
-    pub fn serialize_transform(&self) {
-        let test = serde_json::to_string(&self);
-
-        println!("Serialized data {:?}", test);
-    }
 }
