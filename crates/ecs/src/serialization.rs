@@ -39,19 +39,3 @@ impl Serialize for SerializedVec3 {
         s.end()
     }
 }
-
-// impl Deserialize for SerializedVec3 {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: serde::Deserializer<'de>,
-//     {
-//     }
-// }
-
-// impl Deserialize for SerializedVec3 {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//         where
-//             D: serde::Deserializer<'de> {
-//         let mut ds = deserializer.deserialize_struct(name, fields, visitor)
-//     }
-// }
