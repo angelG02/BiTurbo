@@ -30,7 +30,6 @@ impl App {
 
         // Timer for frame time and render time
         let mut current_time = std::time::Instant::now();
-        let entity1 = self.world.add_entity();
 
         //while !self.window.should_close() {
         loop {
@@ -39,13 +38,6 @@ impl App {
             let frame_time = (new_time - current_time).as_nanos();
             let delta_time = frame_time as f32 / 1000000000.0;
             current_time = new_time;
-
-            self.update_systems();
-
-            self.world
-                .add_component(&entity1, TransformComponent::new(None, None));
-
-            self.world.serialize("crates/ecs/my_world.json").unwrap();
 
             // if comp.position.x >= 4.0 {
             //     self.world.desirialize_self();
