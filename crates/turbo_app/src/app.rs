@@ -1,10 +1,13 @@
-use ecs::*;
+use glam::*;
+
 use turbo_core::prelude::{trace::*, Layer, LayerStack};
+use turbo_ecs::*;
 use turbo_window::prelude::{Event, EventDispatcher, Window};
 
 pub struct App {
     pub world: world::World,
     pub window: Window,
+    pub systems: Vec<Box<dyn systems::System>>,
     layer_stack: LayerStack,
 }
 
@@ -16,9 +19,10 @@ impl App {
             .finish();
 
         subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-
         Self {
             world: world::World::new(),
+            //window: Window::new(1080, 720, "Mercedes s500".to_owned())
+            systems: Vec::new(),
             window: Window::new(1080, 720, "Mercedes s500".to_owned()),
             layer_stack: LayerStack::new(),
         }
@@ -49,6 +53,9 @@ impl App {
             let frame_time = (new_time - current_time).as_nanos();
             let _delta_time = frame_time as f32 * 0.000000001;
             current_time = new_time;
+            // if comp.position.x >= 4.0 {
+            //     self.world.desirialize_self();
+            // }
 
             //trace!("Frame time: {delta_time}s");
 
@@ -57,11 +64,21 @@ impl App {
         }
     }
 
+    pub fn add_system<T: systems::System + 'static>(&mut self, system: T) {
+        self.systems.push(Box::new(system));
+    }
+
+    pub fn update_systems(&mut self) {
+        for system in &mut self.systems {
+            system.update();
+        }
+    }
+
     fn on_window_resize(event: &Event) -> bool {
         match event {
-            Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
-            _ => {}
-        }
+                Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
+                _ => {}
+            }
         false
     }
 
