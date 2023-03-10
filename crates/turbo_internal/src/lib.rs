@@ -14,6 +14,6 @@ pub mod core {
     pub use turbo_core::*;
 }
 
-pub mod ecs {
-    pub use ecs::*;
+pub mod turbo_ecs {
+    pub use turbo_ecs::*;
 }

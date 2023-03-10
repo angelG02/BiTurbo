@@ -1,4 +1,4 @@
-use bi_turbo::{ecs::systems, prelude::*};
+use bi_turbo::{prelude::*, turbo_ecs::systems};
 
 fn main() {
     let mut app = App::new();
