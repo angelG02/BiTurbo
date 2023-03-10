@@ -30,12 +30,14 @@ impl App {
 
     pub fn on_event(&mut self, events: Vec<Event>) {
         for event in events {
-            for layer in &self.layer_stack {
-                let mut dispatcher = EventDispatcher::new(&event);
+            let mut dispatcher = EventDispatcher::new(&event);
 
-                match event {
-                    Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
-                    _ => layer.on_event(&event),
+            match event {
+                Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
+                _ => {
+                    for layer in &self.layer_stack {
+                        layer.on_event(&event)
+                    }
                 }
             }
         }
