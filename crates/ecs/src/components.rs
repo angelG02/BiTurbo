@@ -40,6 +40,22 @@ impl Component for TransformComponent {
 }
 
 impl TransformComponent {
+    /// Creates a new `Transform` with the given position and scale.
+    ///
+    /// The `pos` argument specifies the initial position of the transform,
+    /// which can be provided as a `SerializedVec3` option. If `pos` is `None`,
+    /// the default position of the new transform will be (0.0, 0.0, 0.0).
+    ///
+    /// The `scl` argument specifies the initial scale of the transform, also as
+    /// a `SerializedVec3` option. If `scl` is `None`, the default scale of the
+    /// new transform will be (0.0, 0.0, 0.0).
+    ///
+    /// The `rot` argument is currently commented out and not used, since there
+    /// is no implementation for setting the rotation of the transform. If you
+    /// need to set the rotation, you will need to modify this function or add
+    /// another function to the `Transform` struct.
+    ///
+    /// Returns the new `Transform` with the specified position and scale.
     pub fn new(
         pos: Option<SerializedVec3>,
         /*rot: Option<glam::Quat>*/ scl: Option<SerializedVec3>,
