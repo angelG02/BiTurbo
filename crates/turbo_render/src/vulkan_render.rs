@@ -1,7 +1,6 @@
 #![allow(unused)]
 use crate::vulkan_device::Device;
 use ash::{self, vk};
-use turbo_window::Window;
 
 pub struct Renderer {
     device: Device,
