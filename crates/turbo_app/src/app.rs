@@ -1,5 +1,6 @@
 use ecs::*;
 use turbo_core::prelude::{trace::*, Layer, LayerStack};
+use turbo_render::prelude::Renderer;
 use turbo_window::prelude::{Event, EventDispatcher, Window};
 
 pub struct App {
@@ -24,7 +25,7 @@ impl App {
         }
     }
 
-    pub fn on_event(&mut self, events: Vec<Event>) {
+    pub fn on_event(&self, events: Vec<Event>) {
         for event in events {
             let mut dispatcher = EventDispatcher::new(&event);
 
@@ -40,6 +41,9 @@ impl App {
     }
 
     pub fn run(&mut self) {
+        // ---------Renderer and device setup---------
+        let main_renderer = Renderer::new();
+
         // ---------Timer for frame time and render time---------
         let mut current_time = std::time::Instant::now();
 
@@ -51,6 +55,8 @@ impl App {
             current_time = new_time;
 
             //trace!("Frame time: {delta_time}s");
+
+            main_renderer.draw_frame();
 
             let events = self.window.poll_events();
             self.on_event(events);
