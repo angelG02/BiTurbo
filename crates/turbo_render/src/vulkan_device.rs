@@ -1,5 +1,7 @@
 use ash::{self, vk};
 
+use turbo_core::prelude::trace::{error, info, trace, warn};
+
 #[cfg(target_os = "windows")]
 use ash::extensions::khr::Win32Surface;
 #[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
@@ -10,12 +12,76 @@ use ash::extensions::mvk::MacOSSurface;
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::Surface;
 
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
+use std::os::raw::c_void;
 use std::ptr;
+
+struct ValidationInfo {
+    pub is_enable: bool,
+    pub required_validation_layers: [&'static str; 1],
+}
+
+const VALIDATION: ValidationInfo = ValidationInfo {
+    is_enable: true,
+    required_validation_layers: ["VK_LAYER_KHRONOS_validation"],
+};
+
+/// the callback function used in Debug Utils.
+unsafe extern "system" fn vulkan_debug_utils_callback(
+    message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
+    message_type: vk::DebugUtilsMessageTypeFlagsEXT,
+    p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
+    _p_user_data: *mut c_void,
+) -> vk::Bool32 {
+    let severity = match message_severity {
+        vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE => "[Verbose]",
+        vk::DebugUtilsMessageSeverityFlagsEXT::WARNING => "[Warning]",
+        vk::DebugUtilsMessageSeverityFlagsEXT::ERROR => "[Error]",
+        vk::DebugUtilsMessageSeverityFlagsEXT::INFO => "[Info]",
+        _ => "[Unknown]",
+    };
+    let types = match message_type {
+        vk::DebugUtilsMessageTypeFlagsEXT::GENERAL => "[General]",
+        vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE => "[Performance]",
+        vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION => "[Validation]",
+        _ => "[Unknown]",
+    };
+    let message = CStr::from_ptr((*p_callback_data).p_message);
+    if severity == "[Info]" {
+        info!("[Debug]{}{:?}", types, message);
+    } else if severity == "[Warning]" {
+        warn!("[Debug]{}{:?}", types, message);
+    } else if severity == "[Error]" {
+        error!("[Debug]{}{:?}", types, message)
+    } else {
+        trace!("[Debug]{}{}{:?}", severity, types, message);
+    }
+
+    vk::FALSE
+}
+
+fn populate_debug_messenger_create_info() -> vk::DebugUtilsMessengerCreateInfoEXT {
+    vk::DebugUtilsMessengerCreateInfoEXT {
+        s_type: vk::StructureType::DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+        p_next: ptr::null(),
+        flags: vk::DebugUtilsMessengerCreateFlagsEXT::empty(),
+        message_severity: vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
+            | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+            | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
+            | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
+        message_type: vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
+            | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
+            | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION,
+        pfn_user_callback: Some(vulkan_debug_utils_callback),
+        p_user_data: ptr::null_mut(),
+    }
+}
 
 pub struct Device {
     _entry: ash::Entry,
     instance: ash::Instance,
+    debug_utils_loader: ash::extensions::ext::DebugUtils,
+    debug_messenger: vk::DebugUtilsMessengerEXT,
 }
 
 impl Device {
@@ -25,14 +91,21 @@ impl Device {
         );
 
         let instance = Device::create_instance(&entry);
+        let (debug_utils_loader, debug_messenger) = Device::setup_debug_utils(&entry, &instance);
 
         Device {
             _entry: entry,
             instance,
+            debug_utils_loader,
+            debug_messenger,
         }
     }
 
     fn create_instance(entry: &ash::Entry) -> ash::Instance {
+        if VALIDATION.is_enable && Device::check_validation_layer_support(entry) == false {
+            panic!("Validation layers requested, but not available!");
+        }
+
         let app_name = CString::new("V8 BiTurbo").unwrap();
         let engine_name = CString::new("BiTurbo").unwrap();
 
@@ -43,18 +116,44 @@ impl Device {
             application_version: 1,
             p_engine_name: engine_name.as_ptr(),
             engine_version: 1,
-            api_version: 1,
+            api_version: vk::make_api_version(0, 1, 3, 239),
         };
+
+        let debug_utils_create_info = populate_debug_messenger_create_info();
 
         let extension_names = Device::enumerate_extension_names();
 
+        let required_validation_layer_raw_names: Vec<CString> = VALIDATION
+            .required_validation_layers
+            .iter()
+            .map(|layer_name| CString::new(*layer_name).unwrap())
+            .collect();
+
+        let enable_layer_names: Vec<*const i8> = required_validation_layer_raw_names
+            .iter()
+            .map(|layer_name| layer_name.as_ptr())
+            .collect();
+
         let create_info = vk::InstanceCreateInfo {
             s_type: vk::StructureType::INSTANCE_CREATE_INFO,
-            p_next: ptr::null(),
+            p_next: if VALIDATION.is_enable {
+                &debug_utils_create_info as *const vk::DebugUtilsMessengerCreateInfoEXT
+                    as *const c_void
+            } else {
+                ptr::null()
+            },
             flags: vk::InstanceCreateFlags::empty(),
             p_application_info: &app_info,
-            pp_enabled_layer_names: ptr::null(),
-            enabled_layer_count: 0,
+            pp_enabled_layer_names: if VALIDATION.is_enable {
+                enable_layer_names.as_ptr()
+            } else {
+                ptr::null()
+            },
+            enabled_layer_count: if VALIDATION.is_enable {
+                enable_layer_names.len() as u32
+            } else {
+                0
+            },
             pp_enabled_extension_names: extension_names.as_ptr(),
             enabled_extension_count: extension_names.len() as u32,
         };
@@ -76,11 +175,67 @@ impl Device {
             DebugUtils::name().as_ptr(),
         ]
     }
+
+    fn check_validation_layer_support(entry: &ash::Entry) -> bool {
+        // If validation layers are supported return true
+
+        let layer_props = entry
+            .enumerate_instance_layer_properties()
+            .expect("Failed To Enumerate Instance Layer Properties!");
+
+        if layer_props.len() <= 0 {
+            warn!("No available layers.");
+            return false;
+        }
+
+        for required_layer_name in VALIDATION.required_validation_layers.iter() {
+            let mut is_layer_found = false;
+
+            for layer_prop in layer_props.iter() {
+                let test_layer_name = super::vk_to_string(&layer_prop.layer_name);
+                if (*required_layer_name) == test_layer_name {
+                    is_layer_found = true;
+                    break;
+                }
+            }
+
+            if is_layer_found == false {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn setup_debug_utils(
+        entry: &ash::Entry,
+        instance: &ash::Instance,
+    ) -> (ash::extensions::ext::DebugUtils, vk::DebugUtilsMessengerEXT) {
+        let debug_utils_loader = ash::extensions::ext::DebugUtils::new(entry, instance);
+
+        if VALIDATION.is_enable == false {
+            (debug_utils_loader, vk::DebugUtilsMessengerEXT::null())
+        } else {
+            let messenger_ci = populate_debug_messenger_create_info();
+
+            let utils_messenger = unsafe {
+                debug_utils_loader
+                    .create_debug_utils_messenger(&messenger_ci, None)
+                    .expect("Debug Utils Callback")
+            };
+
+            (debug_utils_loader, utils_messenger)
+        }
+    }
 }
 
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
+            if VALIDATION.is_enable {
+                self.debug_utils_loader
+                    .destroy_debug_utils_messenger(self.debug_messenger, None);
+            }
             self.instance.destroy_instance(None);
         }
     }

@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 turbo_window = { path = "../turbo_window" }
+turbo_core = { path = "../turbo_core" }
 
 # External
 ash = "0.37.2+1.3.238"
