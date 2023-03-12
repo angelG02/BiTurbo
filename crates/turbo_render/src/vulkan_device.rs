@@ -277,13 +277,13 @@ impl Device {
             } else {
                 0
             } as u32,
-            pp_enabled_extension_names: if VALIDATION.is_enable {
+            pp_enabled_layer_names: if VALIDATION.is_enable {
                 enable_layer_names.as_ptr()
             } else {
                 ptr::null()
             },
             enabled_extension_count: 0,
-            pp_enabled_layer_names: ptr::null(),
+            pp_enabled_extension_names: ptr::null(),
             p_enabled_features: &physical_device_features,
         };
 
@@ -415,6 +415,8 @@ impl Device {
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
+            self.device.destroy_device(None);
+
             if VALIDATION.is_enable {
                 self.debug_utils_loader
                     .destroy_debug_utils_messenger(self.debug_messenger, None);
