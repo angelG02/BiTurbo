@@ -1,5 +1,8 @@
 use ecs::*;
-use turbo_core::prelude::{trace::*, Layer, LayerStack};
+use turbo_core::prelude::{
+    trace::{fmt::format, *},
+    Layer, LayerStack,
+};
 use turbo_render::prelude::Renderer;
 use turbo_window::prelude::{Event, EventDispatcher, Window};
 
@@ -13,6 +16,7 @@ impl App {
     pub fn new() -> Self {
         // Logging initialization
         let subscriber = FmtSubscriber::builder()
+            .event_format(format().without_time().with_source_location(false))
             .with_max_level(Level::TRACE)
             .finish();
 

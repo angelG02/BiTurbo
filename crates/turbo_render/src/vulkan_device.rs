@@ -1,6 +1,7 @@
 use ash::{self, vk};
 
-use turbo_core::prelude::trace::{error, info, trace, warn};
+use crate::vulkan_utils::{debug::*, util::*};
+use turbo_core::prelude::trace::warn;
 
 #[cfg(target_os = "windows")]
 use ash::extensions::khr::Win32Surface;
@@ -12,70 +13,14 @@ use ash::extensions::mvk::MacOSSurface;
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::Surface;
 
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::os::raw::c_void;
 use std::ptr;
-
-struct ValidationInfo {
-    pub is_enable: bool,
-    pub required_validation_layers: [&'static str; 1],
-}
 
 const VALIDATION: ValidationInfo = ValidationInfo {
     is_enable: true,
     required_validation_layers: ["VK_LAYER_KHRONOS_validation"],
 };
-
-/// the callback function used in Debug Utils.
-unsafe extern "system" fn vulkan_debug_utils_callback(
-    message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
-    message_type: vk::DebugUtilsMessageTypeFlagsEXT,
-    p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
-    _p_user_data: *mut c_void,
-) -> vk::Bool32 {
-    let severity = match message_severity {
-        vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE => "[Verbose]",
-        vk::DebugUtilsMessageSeverityFlagsEXT::WARNING => "[Warning]",
-        vk::DebugUtilsMessageSeverityFlagsEXT::ERROR => "[Error]",
-        vk::DebugUtilsMessageSeverityFlagsEXT::INFO => "[Info]",
-        _ => "[Unknown]",
-    };
-    let types = match message_type {
-        vk::DebugUtilsMessageTypeFlagsEXT::GENERAL => "[General]",
-        vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE => "[Performance]",
-        vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION => "[Validation]",
-        _ => "[Unknown]",
-    };
-    let message = CStr::from_ptr((*p_callback_data).p_message);
-    if severity == "[Info]" {
-        info!("[Debug]{}{:?}", types, message);
-    } else if severity == "[Warning]" {
-        warn!("[Debug]{}{:?}", types, message);
-    } else if severity == "[Error]" {
-        error!("[Debug]{}{:?}", types, message)
-    } else {
-        trace!("[Debug]{}{}{:?}", severity, types, message);
-    }
-
-    vk::FALSE
-}
-
-fn populate_debug_messenger_create_info() -> vk::DebugUtilsMessengerCreateInfoEXT {
-    vk::DebugUtilsMessengerCreateInfoEXT {
-        s_type: vk::StructureType::DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-        p_next: ptr::null(),
-        flags: vk::DebugUtilsMessengerCreateFlagsEXT::empty(),
-        message_severity: vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
-            | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
-            | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
-            | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
-        message_type: vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
-            | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
-            | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION,
-        pfn_user_callback: Some(vulkan_debug_utils_callback),
-        p_user_data: ptr::null_mut(),
-    }
-}
 
 pub struct Device {
     _entry: ash::Entry,
@@ -192,7 +137,7 @@ impl Device {
             let mut is_layer_found = false;
 
             for layer_prop in layer_props.iter() {
-                let test_layer_name = super::vk_to_string(&layer_prop.layer_name);
+                let test_layer_name = vk_to_string(&layer_prop.layer_name);
                 if (*required_layer_name) == test_layer_name {
                     is_layer_found = true;
                     break;
