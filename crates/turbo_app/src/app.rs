@@ -1,9 +1,7 @@
-use ecs::*;
 use turbo_core::prelude::{trace::*, Layer, LayerStack};
 use turbo_window::prelude::{Event, EventDispatcher, Window};
 
 pub struct App {
-    pub world: world::World,
     pub window: Window,
     layer_stack: LayerStack,
 }
@@ -18,7 +16,6 @@ impl App {
         subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
         Self {
-            world: world::World::new(),
             window: Window::new(1080, 720, "Mercedes s500".to_owned()),
             layer_stack: LayerStack::new(),
         }

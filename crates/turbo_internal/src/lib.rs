@@ -13,7 +13,3 @@ pub mod core {
     //! Core components and bundles for biTurbo.
     pub use turbo_core::*;
 }
-
-pub mod ecs {
-    pub use ecs::*;
-}
