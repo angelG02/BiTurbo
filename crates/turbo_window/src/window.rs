@@ -137,3 +137,5 @@ impl Window {
         self.window.should_close()
     }
 }
+
+unsafe impl Send for Window {}

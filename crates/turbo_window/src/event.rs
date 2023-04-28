@@ -1,3 +1,5 @@
+use bevy_ecs::prelude::*;
+
 pub enum EventCategory {
     None = 0,
     Application = (1 << 0),
@@ -7,7 +9,7 @@ pub enum EventCategory {
     MouseButton = (1 << 4),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Resource, PartialEq, Debug)]
 #[repr(i32)]
 pub enum Event {
     None = 0,

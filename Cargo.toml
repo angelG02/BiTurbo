@@ -1,5 +1,6 @@
 [package]
 name = "bi_turbo"
+authors = ["AngelG"]
 version = "0.1.0"
 edition = "2021"
 
@@ -12,3 +13,34 @@ members = [
 
 [dependencies]
 turbo_internal = { path = "crates/turbo_internal" }
+
+###############################################################################
+#                               BUILD SETTINGS
+###############################################################################
+
+[lib]
+name = "bi_turbo"
+crate-type = ["lib"]
+path = "src/lib.rs"
+
+[profile.dev]                           # Modify profile settings via config.
+opt-level = 0                           # Optimization level.
+debug = true                            # Include debug info.
+debug-assertions = true                 # Enables debug assertions.
+overflow-checks = true                  # Enables runtime integer overflow checks.
+lto = false                             # Sets link-time optimization.
+panic = 'unwind'                        # The panic strategy.
+incremental = true                      # Incremental compilation.
+codegen-units = 16                      # Number of code generation units.
+rpath = false                           # Sets the rpath linking option.
+
+[profile.release]                       # Modify profile settings via config.
+opt-level = 3                           # Optimization level.
+debug = true                           # Include debug info.
+debug-assertions = false                # Enables debug assertions.
+overflow-checks = false                 # Enables runtime integer overflow checks.
+lto = false                              # Sets link-time optimization.
+panic = 'abort'                         # The panic strategy.
+incremental = true                      # Incremental compilation.
+codegen-units = 1                       # Number of code generation units.
+rpath = false                           # Sets the rpath linking option.

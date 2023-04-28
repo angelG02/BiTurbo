@@ -1,6 +1,7 @@
+use bevy_ecs::prelude::*;
 use std::collections::HashMap;
 
-pub use turbo_window::Event;
+pub use turbo_window::event::Event;
 
 /// Defines the functions that must be implemented by a layer
 pub trait Layer {
@@ -25,12 +26,16 @@ pub trait Layer {
     fn on_event(&self, event: &Event);
 }
 
+#[derive(Resource, Default)]
 /// Represents a stack of layers
 pub struct LayerStack {
     layers: Vec<Box<dyn Layer>>,   // The list of layers in the stack
     names: HashMap<String, usize>, // A map of layer names to their indices in the list
     insert_index: usize,           // The index at which to insert new layers
 }
+
+unsafe impl Send for LayerStack {}
+unsafe impl Sync for LayerStack {}
 
 impl LayerStack {
     /// Creates a new empty LayerStack
