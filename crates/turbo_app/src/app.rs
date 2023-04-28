@@ -6,10 +6,10 @@ use turbo_window::prelude::*;
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnUpdateMain;
+pub struct OnMainUpdate;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnPostUpdateMain;
+pub struct OnMainPostUpdate;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnStartup;
@@ -48,7 +48,7 @@ impl App {
             )
                 .chain(),
         );
-        schedules.insert(OnPostUpdateMain, post_update);
+        schedules.insert(OnMainPostUpdate, post_update);
 
         // On Event schedule
         let mut on_event = Schedule::new();
@@ -81,9 +81,9 @@ impl App {
 
             self.world.run_schedule(OnEvent);
 
-            self.world.run_schedule(OnUpdateMain);
+            self.world.run_schedule(OnMainUpdate);
 
-            self.world.run_schedule(OnPostUpdateMain);
+            self.world.run_schedule(OnMainPostUpdate);
         }
     }
 
@@ -122,7 +122,7 @@ impl App {
             match event {
                 Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
                 _ => {
-                    for layer in layer_stack {
+                    for layer in layer_stack.into_iter().rev() {
                         layer.on_event(&event)
                     }
                 }
