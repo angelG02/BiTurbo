@@ -7,6 +7,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+turbo_app = {path = "../turbo_app"}
+turbo_core = {path = "../turbo_core"}
+
 glfw = "0.51.0"
 bevy_ecs = "0.10.1"
 

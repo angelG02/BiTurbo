@@ -1,9 +1,12 @@
+use crate::plugin::*;
+use turbo_core::event::Event;
 use turbo_core::layer::{Layer, LayerStack};
 use turbo_core::prelude::*;
-use turbo_window::event::{Event, EventDispatcher};
-use turbo_window::prelude::*;
 
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnMainPreUpdate;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnMainUpdate;
@@ -17,9 +20,22 @@ pub struct OnStartup;
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnEvent;
 
+static mut APP: Option<Box<App>> = None;
+
+pub fn app() -> &'static mut App {
+    unsafe { APP.as_mut().unwrap() }
+}
+
+pub fn create_v0_engine() -> &'static mut App {
+    unsafe {
+        APP = Some(Box::new(App::new()));
+        APP.as_mut().unwrap()
+    }
+}
+
 pub struct App {
     pub world: World,
-    running: bool,
+    pub running: bool,
 }
 
 impl App {
@@ -36,18 +52,16 @@ impl App {
         // Initialize resourece TODO: Maybe move all this to an init app system?
         world.init_resource::<Schedules>();
         world.init_resource::<LayerStack>();
+
         let mut schedules = world.resource_mut::<Schedules>();
+
+        // Pre update schedule
+        let pre_update = Schedule::new();
+        schedules.insert(OnMainPreUpdate, pre_update);
 
         // Post update schedule
         let mut post_update = Schedule::new();
-        post_update.add_systems(
-            (
-                apply_system_buffers,
-                World::clear_trackers,
-                App::poll_events,
-            )
-                .chain(),
-        );
+        post_update.add_systems((apply_system_buffers, World::clear_trackers).chain());
         schedules.insert(OnMainPostUpdate, post_update);
 
         // On Event schedule
@@ -68,8 +82,7 @@ impl App {
         self.world.run_schedule(OnStartup);
 
         while self.running {
-            let window = self.world.get_non_send_resource::<Window>().unwrap();
-            self.running = !window.should_close();
+            self.world.run_schedule(OnMainPreUpdate);
 
             // Calculate frame time (delta time)
             let new_time = std::time::Instant::now();
@@ -104,39 +117,35 @@ impl App {
         self
     }
 
-    fn poll_events(world: &mut World) {
-        let mut window = world.get_non_send_resource_mut::<Window>().unwrap();
-
-        let events = window.poll_events();
-
-        for event in events {
-            world.insert_resource::<turbo_window::event::Event>(event);
-        }
-    }
-
     fn on_event(world: &mut World) {
-        if let Some(event) = world.get_resource::<turbo_window::event::Event>() {
-            let mut dispatcher = EventDispatcher::new(&event);
+        if let Some(event) = world.get_resource::<Event>() {
+            let mut _dispatcher = EventDispatcher::new(&event);
             let layer_stack = world.get_resource::<LayerStack>().unwrap();
 
             match event {
-                Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
+                // Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
                 _ => {
                     for layer in layer_stack.into_iter().rev() {
                         layer.on_event(&event)
                     }
                 }
             }
-            world.remove_resource::<turbo_window::event::Event>();
+            world.remove_resource::<Event>();
         }
     }
+    // TODO: Handle this somewhere else xd
 
-    fn on_window_resize(event: &Event) -> bool {
-        match event {
-            Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
-            _ => {}
-        }
-        false
+    // fn on_window_resize(event: &Event) -> bool {
+    //     match event {
+    //         Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
+    //         _ => {}
+    //     }
+    //     false
+    // }
+
+    pub fn add_plugin<T: Plugin>(&mut self, plugin: T) -> &mut Self {
+        plugin.build(self);
+        self
     }
 
     pub fn push_layer(&mut self, layer_name: &str, layer: Box<dyn Layer>) -> &mut Self {

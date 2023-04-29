@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use std::collections::HashMap;
 
-pub use turbo_window::event::Event;
+pub use crate::event::Event;
 
 /// Defines the functions that must be implemented by a layer
 pub trait Layer {
