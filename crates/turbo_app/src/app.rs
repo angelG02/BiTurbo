@@ -1,5 +1,5 @@
 use crate::plugin::*;
-use turbo_core::prelude::*;
+use turbo_core::prelude::trace::*;
 
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
 

@@ -1,23 +1,24 @@
 [package]
-name = "turbo_internal"
+name = "turbo_ecs"
 authors = ["AngelG"]
 version = "0.1.0"
 edition = "2021"
 
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-turbo_app = { path = "../turbo_app" }
-turbo_core = { path = "../turbo_core" }
-turbo_window = { path = "../turbo_window" }
-turbo_ecs = { path = "../turbo_ecs" }
+# biTurbo
+
+# Other
+bevy_ecs = "0.10.1"
 
 ###############################################################################
 #                               BUILD SETTINGS
 ###############################################################################
 
 [lib]
-name = "turbo_internal"
+name = "turbo_ecs"
 crate-type = ["lib"]
 path = "src/lib.rs"
 
