@@ -1,10 +1,8 @@
-mod app;
-pub use app::*;
+pub mod app;
 
-mod plugin;
-pub use plugin::*;
+pub mod plugin;
 
 pub mod prelude {
-    pub use crate::app::App;
+    pub use crate::app::*;
     pub use crate::plugin::*;
 }

@@ -1,6 +1,6 @@
 use glfw::{Action, Context, Glfw, Key, Window as GLFWWindow, WindowEvent};
 use std::sync::mpsc::Receiver;
-use turbo_app::{app, OnEvent, OnMainPreUpdate, Plugin};
+use turbo_app::prelude::*;
 
 use turbo_core::event::Event;
 
@@ -146,7 +146,7 @@ unsafe impl Send for Window {}
 pub struct WindowPlugin;
 
 impl Plugin for WindowPlugin {
-    fn build(&self, app: &mut turbo_app::App) {
+    fn build(&self, app: &mut App) {
         let window = Window::new(1080, 720, "BiTurbo x Chronlicle".into());
 
         app.world.insert_non_send_resource(window);

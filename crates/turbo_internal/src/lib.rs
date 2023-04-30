@@ -21,9 +21,3 @@ pub mod ecs {
 
 /// `use bi_turbo::prelude::*;` to import common components, bundles, and plugins.
 pub mod prelude;
-// {
-//     pub use crate::app::prelude::*;
-//     pub use crate::core::prelude::*;
-//     pub use crate::ecs::prelude::*;
-//     pub use crate::window::prelude::*;
-// }

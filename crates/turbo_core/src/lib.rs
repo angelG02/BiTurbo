@@ -1,5 +1,6 @@
 pub mod event;
-pub use event::*;
+
+pub mod util;
 
 pub mod trace {
     pub use tracing::*;
