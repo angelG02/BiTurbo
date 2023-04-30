@@ -1,9 +1,45 @@
 [package]
 name = "turbo_window"
+authors = ["AngelG"]
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+turbo_app = {path = "../turbo_app"}
+turbo_core = {path = "../turbo_core"}
+
 glfw = "0.51.0"
+bevy_ecs = "0.10.1"
+
+###############################################################################
+#                               BUILD SETTINGS
+###############################################################################
+
+[lib]
+name = "turbo_window"
+crate-type = ["lib"]
+path = "src/lib.rs"
+
+[profile.dev]                           # Modify profile settings via config.
+opt-level = 0                           # Optimization level.
+debug = true                            # Include debug info.
+debug-assertions = true                 # Enables debug assertions.
+overflow-checks = true                  # Enables runtime integer overflow checks.
+lto = false                             # Sets link-time optimization.
+panic = 'unwind'                        # The panic strategy.
+incremental = true                      # Incremental compilation.
+codegen-units = 16                      # Number of code generation units.
+rpath = false                           # Sets the rpath linking option.
+
+[profile.release]                       # Modify profile settings via config.
+opt-level = 3                           # Optimization level.
+debug = true                           # Include debug info.
+debug-assertions = false                # Enables debug assertions.
+overflow-checks = false                 # Enables runtime integer overflow checks.
+lto = false                              # Sets link-time optimization.
+panic = 'abort'                         # The panic strategy.
+incremental = true                      # Incremental compilation.
+codegen-units = 1                       # Number of code generation units.
+rpath = false                           # Sets the rpath linking option.

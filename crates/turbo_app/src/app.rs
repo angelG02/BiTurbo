@@ -1,11 +1,39 @@
-use ecs::*;
-use turbo_core::prelude::{trace::*, Layer, LayerStack};
-use turbo_window::prelude::{Event, EventDispatcher, Window};
+use crate::plugin::*;
+use turbo_core::prelude::*;
+
+use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnMainPreUpdate;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnMainUpdate;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnMainPostUpdate;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnStartup;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnEvent;
+
+static mut APP: Option<Box<App>> = None;
+
+pub fn app() -> &'static mut App {
+    unsafe { APP.as_mut().unwrap() }
+}
+
+pub fn create_v0_engine() -> &'static mut App {
+    unsafe {
+        APP = Some(Box::new(App::new()));
+        APP.as_mut().unwrap()
+    }
+}
 
 pub struct App {
-    pub world: world::World,
-    pub window: Window,
-    layer_stack: LayerStack,
+    pub world: World,
+    pub running: bool,
 }
 
 impl App {
@@ -17,25 +45,29 @@ impl App {
 
         subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
+        let mut world = World::default();
+
+        // Initialize resoureces
+        world.init_resource::<Schedules>();
+
+        let mut schedules = world.resource_mut::<Schedules>();
+
+        // Pre update schedule
+        let pre_update = Schedule::new();
+        schedules.insert(OnMainPreUpdate, pre_update);
+
+        // Post update schedule
+        let mut post_update = Schedule::new();
+        post_update.add_systems((apply_system_buffers, World::clear_trackers).chain());
+        schedules.insert(OnMainPostUpdate, post_update);
+
+        // On Event schedule
+        let on_event = Schedule::new();
+        schedules.insert(OnEvent, on_event);
+
         Self {
-            world: world::World::new(),
-            window: Window::new(1080, 720, "Mercedes s500".to_owned()),
-            layer_stack: LayerStack::new(),
-        }
-    }
-
-    pub fn on_event(&mut self, events: Vec<Event>) {
-        for event in events {
-            let mut dispatcher = EventDispatcher::new(&event);
-
-            match event {
-                Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
-                _ => {
-                    for layer in &self.layer_stack {
-                        layer.on_event(&event)
-                    }
-                }
-            }
+            world,
+            running: true,
         }
     }
 
@@ -43,7 +75,11 @@ impl App {
         // ---------Timer for frame time and render time---------
         let mut current_time = std::time::Instant::now();
 
-        while !self.window.should_close() {
+        self.world.run_schedule(OnStartup);
+
+        while self.running {
+            self.world.run_schedule(OnMainPreUpdate);
+
             // Calculate frame time (delta time)
             let new_time = std::time::Instant::now();
             let frame_time = (new_time - current_time).as_nanos();
@@ -52,33 +88,43 @@ impl App {
 
             //trace!("Frame time: {delta_time}s");
 
-            let events = self.window.poll_events();
-            self.on_event(events);
+            self.world.run_schedule(OnEvent);
+
+            self.world.run_schedule(OnMainUpdate);
+
+            self.world.run_schedule(OnMainPostUpdate);
         }
     }
 
-    fn on_window_resize(event: &Event) -> bool {
-        match event {
-            Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
-            _ => {}
+    pub fn add_systems<M>(
+        &mut self,
+        schedule: impl ScheduleLabel,
+        systems: impl IntoSystemConfigs<M>,
+    ) -> &mut Self {
+        let mut schedules = self.world.resource_mut::<Schedules>();
+
+        if let Some(schedule) = schedules.get_mut(&schedule) {
+            schedule.add_systems(systems);
+        } else {
+            let mut new_schedule = Schedule::new();
+            new_schedule.add_systems(systems);
+            schedules.insert(schedule, new_schedule);
         }
-        false
+        self
     }
 
-    pub fn push_layer(&mut self, layer_name: &str, layer: Box<dyn Layer>) {
-        self.layer_stack.push_layer(layer_name, layer);
-    }
+    // TODO: Handle this somewhere else xd
 
-    pub fn pop_layer(&mut self, layer_name: &str) {
-        self.layer_stack.pop_layer(layer_name);
-    }
+    // fn on_window_resize(event: &Event) -> bool {
+    //     match event {
+    //         Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
+    //         _ => {}
+    //     }
+    //     false
+    // }
 
-    /// Overlays will always be pushed to the back of the Layer Stack (Will always be on top of the layers)
-    pub fn push_overlay(&mut self, overlay_name: &str, overlay: Box<dyn Layer>) {
-        self.layer_stack.push_overlay(overlay_name, overlay);
-    }
-
-    pub fn pop_overlay(&mut self, overlay_name: &str) {
-        self.layer_stack.pop_overlay(overlay_name);
+    pub fn add_plugin<T: Plugin>(&mut self, plugin: T) -> &mut Self {
+        plugin.build(self);
+        self
     }
 }
