@@ -61,7 +61,7 @@ impl App {
         post_update.add_systems((apply_system_buffers, World::clear_trackers).chain());
         schedules.insert(OnMainPostUpdate, post_update);
 
-        // On Event schedule
+        // On Event schedule (Window's poll_events is called here)
         let on_event = Schedule::new();
         schedules.insert(OnEvent, on_event);
 
@@ -78,8 +78,6 @@ impl App {
         self.world.run_schedule(OnStartup);
 
         while self.running {
-            self.world.run_schedule(OnMainPreUpdate);
-
             // Calculate frame time (delta time)
             let new_time = std::time::Instant::now();
             let frame_time = (new_time - current_time).as_nanos();
@@ -87,6 +85,8 @@ impl App {
             current_time = new_time;
 
             //trace!("Frame time: {delta_time}s");
+
+            self.world.run_schedule(OnMainPreUpdate);
 
             self.world.run_schedule(OnEvent);
 

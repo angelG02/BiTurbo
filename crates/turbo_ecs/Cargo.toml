@@ -9,9 +9,11 @@ edition = "2021"
 
 [dependencies]
 # biTurbo
+turbo_core = {path = "../turbo_core"}
 
 # Other
 bevy_ecs = "0.10.1"
+cgmath = "0.18.0"
 
 ###############################################################################
 #                               BUILD SETTINGS
