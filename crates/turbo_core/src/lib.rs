@@ -8,5 +8,5 @@ pub mod trace {
 }
 
 pub mod prelude {
-    pub use crate::*;
+    pub use crate::{event, trace, util};
 }
