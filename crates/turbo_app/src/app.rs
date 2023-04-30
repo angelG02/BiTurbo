@@ -1,6 +1,4 @@
 use crate::plugin::*;
-use turbo_core::event::Event;
-use turbo_core::layer::{Layer, LayerStack};
 use turbo_core::prelude::*;
 
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
@@ -49,9 +47,8 @@ impl App {
 
         let mut world = World::default();
 
-        // Initialize resourece TODO: Maybe move all this to an init app system?
+        // Initialize resoureces
         world.init_resource::<Schedules>();
-        world.init_resource::<LayerStack>();
 
         let mut schedules = world.resource_mut::<Schedules>();
 
@@ -65,8 +62,7 @@ impl App {
         schedules.insert(OnMainPostUpdate, post_update);
 
         // On Event schedule
-        let mut on_event = Schedule::new();
-        on_event.add_system(App::on_event);
+        let on_event = Schedule::new();
         schedules.insert(OnEvent, on_event);
 
         Self {
@@ -117,22 +113,6 @@ impl App {
         self
     }
 
-    fn on_event(world: &mut World) {
-        if let Some(event) = world.get_resource::<Event>() {
-            let mut _dispatcher = EventDispatcher::new(&event);
-            let layer_stack = world.get_resource::<LayerStack>().unwrap();
-
-            match event {
-                // Event::WindowResize(_, _) => dispatcher.dispatch(&App::on_window_resize),
-                _ => {
-                    for layer in layer_stack.into_iter().rev() {
-                        layer.on_event(&event)
-                    }
-                }
-            }
-            world.remove_resource::<Event>();
-        }
-    }
     // TODO: Handle this somewhere else xd
 
     // fn on_window_resize(event: &Event) -> bool {
@@ -145,31 +125,6 @@ impl App {
 
     pub fn add_plugin<T: Plugin>(&mut self, plugin: T) -> &mut Self {
         plugin.build(self);
-        self
-    }
-
-    pub fn push_layer(&mut self, layer_name: &str, layer: Box<dyn Layer>) -> &mut Self {
-        let mut layer_stack = self.world.get_resource_mut::<LayerStack>().unwrap();
-        layer_stack.push_layer(layer_name, layer);
-        self
-    }
-
-    pub fn pop_layer(&mut self, layer_name: &str) -> &mut Self {
-        let mut layer_stack = self.world.get_resource_mut::<LayerStack>().unwrap();
-        layer_stack.pop_layer(layer_name);
-        self
-    }
-
-    /// Overlays will always be pushed to the back of the Layer Stack (Will always be on top of the layers)
-    pub fn push_overlay(&mut self, overlay_name: &str, overlay: Box<dyn Layer>) -> &mut Self {
-        let mut layer_stack = self.world.get_resource_mut::<LayerStack>().unwrap();
-        layer_stack.push_overlay(overlay_name, overlay);
-        self
-    }
-
-    pub fn pop_overlay(&mut self, overlay_name: &str) -> &mut Self {
-        let mut layer_stack = self.world.get_resource_mut::<LayerStack>().unwrap();
-        layer_stack.pop_overlay(overlay_name);
         self
     }
 }
