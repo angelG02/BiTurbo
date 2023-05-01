@@ -4,6 +4,9 @@ use turbo_core::prelude::trace::*;
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnBeginUpdateLoop;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnMainPreUpdate;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
@@ -52,6 +55,14 @@ impl App {
 
         let mut schedules = world.resource_mut::<Schedules>();
 
+        // On Begin Update Loop schedule (first schedule that will run in the update loop)
+        let on_event = Schedule::new();
+        schedules.insert(OnEvent, on_event);
+
+        // On Event schedule (Window's poll_events is called here)
+        let on_event = Schedule::new();
+        schedules.insert(OnEvent, on_event);
+
         // Pre update schedule
         let pre_update = Schedule::new();
         schedules.insert(OnMainPreUpdate, pre_update);
@@ -60,10 +71,6 @@ impl App {
         let mut post_update = Schedule::new();
         post_update.add_systems((apply_system_buffers, World::clear_trackers).chain());
         schedules.insert(OnMainPostUpdate, post_update);
-
-        // On Event schedule (Window's poll_events is called here)
-        let on_event = Schedule::new();
-        schedules.insert(OnEvent, on_event);
 
         Self {
             world,
@@ -86,9 +93,9 @@ impl App {
 
             //trace!("Frame time: {delta_time}s");
 
-            self.world.run_schedule(OnMainPreUpdate);
-
             self.world.run_schedule(OnEvent);
+
+            self.world.run_schedule(OnMainPreUpdate);
 
             self.world.run_schedule(OnMainUpdate);
 
@@ -110,6 +117,11 @@ impl App {
             new_schedule.add_systems(systems);
             schedules.insert(schedule, new_schedule);
         }
+        self
+    }
+
+    pub fn init_resource<R: Resource + FromWorld>(&mut self) -> &mut Self {
+        self.world.init_resource::<R>();
         self
     }
 

@@ -1,5 +1,76 @@
 use cgmath::{Matrix4, Quaternion, SquareMatrix, Vector3, Vector4};
 
+pub use std::cell::{Ref, RefCell, RefMut};
+pub use std::rc::Rc;
+pub use std::sync::Arc;
+pub use std::sync::{Mutex, MutexGuard};
+
+#[derive(Clone)]
+pub struct RcCell<T> {
+    value: Rc<RefCell<T>>,
+}
+
+impl<T> RcCell<T> {
+    pub fn new(value: T) -> Self {
+        RcCell {
+            value: Rc::new(RefCell::new(value)),
+        }
+    }
+
+    pub fn strong_count(&self) -> usize {
+        Rc::strong_count(&self.value)
+    }
+
+    pub fn as_ref(&self) -> Ref<'_, T> {
+        self.value.as_ref().borrow()
+    }
+
+    pub fn as_mut(&self) -> RefMut<'_, T> {
+        self.value.as_ref().borrow_mut()
+    }
+
+    pub fn as_ptr(&self) -> *const T {
+        RefCell::as_ptr(&self.value)
+    }
+
+    pub fn clone(&self) -> RcCell<T> {
+        RcCell {
+            value: self.value.clone(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct ArcMutex<T> {
+    value: Arc<Mutex<T>>,
+}
+
+impl<T> ArcMutex<T> {
+    pub fn new(value: T) -> Self {
+        ArcMutex {
+            value: Arc::new(Mutex::new(value)),
+        }
+    }
+
+    pub fn strong_count(&self) -> usize {
+        Arc::strong_count(&self.value)
+    }
+
+    pub fn as_ref(&self) -> MutexGuard<'_, T> {
+        self.value.as_ref().lock().expect("Failed to lock ArcMutex")
+    }
+
+    pub fn as_mut(&self) -> MutexGuard<'_, T> {
+        self.value.as_ref().lock().expect("Failed to lock ArcMutex")
+    }
+
+    pub fn clone(&self) -> ArcMutex<T> {
+        ArcMutex {
+            value: self.value.clone(),
+        }
+    }
+}
+
 pub fn vec_remove_multiple<T>(vec: &mut Vec<T>, indices: &mut Vec<usize>) {
     indices.sort();
 

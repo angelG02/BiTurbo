@@ -19,5 +19,9 @@ pub mod ecs {
     pub use turbo_ecs::*;
 }
 
+pub mod render {
+    pub use turbo_render::*;
+}
+
 /// `use bi_turbo::prelude::*;` to import common components, bundles, and plugins.
 pub mod prelude;
