@@ -1,2 +1,2 @@
-pub mod vulkan_renderer;
-pub use vulkan_renderer::*;
+pub mod vk_renderer;
+pub mod vk_utils;
