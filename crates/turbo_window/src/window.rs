@@ -124,6 +124,11 @@ impl Window {
                     turbo_events.push(event);
                 }
 
+                glfw::WindowEvent::FileDrop(path) => {
+                    let event = Event::FileDropped(path);
+                    turbo_events.push(event);
+                }
+
                 _ => {}
             }
         }

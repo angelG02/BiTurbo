@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use bevy_ecs::prelude::*;
 
 pub enum EventCategory {
@@ -25,6 +27,7 @@ pub enum Event {
     MouseButtonReleased(glfw::MouseButton),
     MouseMoved(f32, f32),
     MouseScrolled(f32, f32),
+    FileDropped(Vec<PathBuf>),
     Handled,
 }
 
