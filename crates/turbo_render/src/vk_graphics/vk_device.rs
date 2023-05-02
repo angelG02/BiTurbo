@@ -1,4 +1,5 @@
 use ash::{self, vk};
+use glfw::Window;
 
 use crate::prelude::vk_utils::{debug::*, util::*};
 use turbo_core::prelude::trace::{info, warn};
@@ -19,13 +20,28 @@ use std::ptr;
 
 use bevy_ecs::prelude::*;
 
+use super::vk_utils::platforms;
+
 struct QueueFamilyIndices {
     graphics_family: Option<u32>,
+    present_family: Option<u32>,
+}
+
+struct SurfaceDetails {
+    surface_loader: ash::extensions::khr::Surface,
+    surface: vk::SurfaceKHR,
 }
 
 impl QueueFamilyIndices {
+    pub fn new() -> QueueFamilyIndices {
+        Self {
+            graphics_family: None,
+            present_family: None,
+        }
+    }
+
     pub fn is_complete(&self) -> bool {
-        self.graphics_family.is_some()
+        self.graphics_family.is_some() && self.present_family.is_some()
     }
 }
 
@@ -38,34 +54,46 @@ const VALIDATION: ValidationInfo = ValidationInfo {
 pub struct Device {
     _entry: ash::Entry,
     instance: ash::Instance,
+    surface_loader: ash::extensions::khr::Surface,
+    surface: vk::SurfaceKHR,
     debug_utils_loader: ash::extensions::ext::DebugUtils,
     debug_messenger: vk::DebugUtilsMessengerEXT,
     _physical_device: vk::PhysicalDevice,
     device: ash::Device,
     _graphics_queue: vk::Queue,
+    _present_queue: vk::Queue,
 }
 
 impl Device {
-    pub fn new() -> Self {
+    pub fn new(window: &Window) -> Self {
         let entry = unsafe { ash::Entry::load() }.expect(
             "Could not load Vulkan Library. Please make sure you have the Vulkan SDK installed!",
         );
 
         let instance = Device::create_instance(&entry);
         let (debug_utils_loader, debug_messenger) = Device::setup_debug_utils(&entry, &instance);
-        let physical_device = Device::pick_physical_device(&instance);
+        let surface_details = Device::create_surface(&entry, &instance, &window);
+        let physical_device = Device::pick_physical_device(&instance, &surface_details);
 
-        let (logical_device, graphics_queue) =
-            Device::create_logical_device(&instance, physical_device);
+        let (logical_device, family_indices) =
+            Device::create_logical_device(&instance, physical_device, &surface_details);
+
+        let graphics_queue =
+            unsafe { logical_device.get_device_queue(family_indices.graphics_family.unwrap(), 0) };
+        let present_queue =
+            unsafe { logical_device.get_device_queue(family_indices.present_family.unwrap(), 0) };
 
         Device {
             _entry: entry,
             instance,
+            surface_loader: surface_details.surface_loader,
+            surface: surface_details.surface,
             debug_utils_loader,
             debug_messenger,
             _physical_device: physical_device,
             device: logical_device,
             _graphics_queue: graphics_queue,
+            _present_queue: present_queue,
         }
     }
 
@@ -135,6 +163,23 @@ impl Device {
         instance
     }
 
+    fn create_surface(
+        entry: &ash::Entry,
+        instance: &ash::Instance,
+        window: &Window,
+    ) -> SurfaceDetails {
+        let surface = unsafe {
+            platforms::create_surface(entry, instance, window).expect("Failed to create surface!")
+        };
+
+        let surface_loader = ash::extensions::khr::Surface::new(entry, instance);
+
+        SurfaceDetails {
+            surface_loader,
+            surface,
+        }
+    }
+
     #[cfg(all(windows))]
     fn enumerate_extension_names() -> Vec<*const i8> {
         vec![
@@ -196,7 +241,10 @@ impl Device {
         }
     }
 
-    fn pick_physical_device(instance: &ash::Instance) -> vk::PhysicalDevice {
+    fn pick_physical_device(
+        instance: &ash::Instance,
+        surface_details: &SurfaceDetails,
+    ) -> vk::PhysicalDevice {
         let physical_devices = unsafe {
             instance
                 .enumerate_physical_devices()
@@ -213,7 +261,7 @@ impl Device {
         for &physical_device in physical_devices.iter() {
             let device_props = unsafe { instance.get_physical_device_properties(physical_device) };
             if let vk::PhysicalDeviceType::DISCRETE_GPU = device_props.device_type {
-                if Device::is_physical_device_suitable(instance, physical_device) {
+                if Device::is_physical_device_suitable(instance, physical_device, surface_details) {
                     if result.is_none() {
                         result = Some(physical_device)
                     }
@@ -224,7 +272,7 @@ impl Device {
         // If there is no discrete GPU try and pick the integrated one
         if result.is_none() {
             for &physical_device in physical_devices.iter() {
-                if Device::is_physical_device_suitable(instance, physical_device) {
+                if Device::is_physical_device_suitable(instance, physical_device, surface_details) {
                     if result.is_none() {
                         result = Some(physical_device)
                     }
@@ -241,18 +289,28 @@ impl Device {
     fn create_logical_device(
         instance: &ash::Instance,
         physical_device: vk::PhysicalDevice,
-    ) -> (ash::Device, vk::Queue) {
-        let indices = Device::find_queue_family(instance, physical_device);
+        surface_details: &SurfaceDetails,
+    ) -> (ash::Device, QueueFamilyIndices) {
+        let indices = Device::find_queue_family(instance, physical_device, surface_details);
+
+        use std::collections::HashSet;
+        let mut unique_queue_families = HashSet::new();
+        unique_queue_families.insert(indices.graphics_family.unwrap());
+        unique_queue_families.insert(indices.present_family.unwrap());
 
         let queue_priorities = [1.0_f32];
-        let queue_create_info = vk::DeviceQueueCreateInfo {
-            s_type: vk::StructureType::DEVICE_QUEUE_CREATE_INFO,
-            p_next: ptr::null(),
-            flags: vk::DeviceQueueCreateFlags::empty(),
-            queue_family_index: indices.graphics_family.unwrap(),
-            p_queue_priorities: queue_priorities.as_ptr(),
-            queue_count: queue_priorities.len() as u32,
-        };
+        let mut queue_create_infos = vec![];
+        for &queue_family in unique_queue_families.iter() {
+            let queue_create_info = vk::DeviceQueueCreateInfo {
+                s_type: vk::StructureType::DEVICE_QUEUE_CREATE_INFO,
+                p_next: ptr::null(),
+                flags: vk::DeviceQueueCreateFlags::empty(),
+                queue_family_index: queue_family,
+                p_queue_priorities: queue_priorities.as_ptr(),
+                queue_count: queue_priorities.len() as u32,
+            };
+            queue_create_infos.push(queue_create_info);
+        }
 
         let physical_device_features = vk::PhysicalDeviceFeatures {
             ..Default::default() // default will not enable any features
@@ -273,8 +331,8 @@ impl Device {
             s_type: vk::StructureType::DEVICE_CREATE_INFO,
             p_next: ptr::null(),
             flags: vk::DeviceCreateFlags::empty(),
-            queue_create_info_count: 1,
-            p_queue_create_infos: &queue_create_info,
+            queue_create_info_count: queue_create_infos.len() as u32,
+            p_queue_create_infos: queue_create_infos.as_ptr(),
             enabled_layer_count: if VALIDATION.is_enable {
                 enable_layer_names.len()
             } else {
@@ -296,15 +354,13 @@ impl Device {
                 .expect("Failed to create logical device!")
         };
 
-        let graphics_queue =
-            unsafe { device.get_device_queue(indices.graphics_family.unwrap(), 0) };
-
-        (device, graphics_queue)
+        (device, indices)
     }
 
     fn is_physical_device_suitable(
         instance: &ash::Instance,
         physical_device: vk::PhysicalDevice,
+        surface_details: &SurfaceDetails,
     ) -> bool {
         let device_props = unsafe { instance.get_physical_device_properties(physical_device) };
 
@@ -381,7 +437,7 @@ impl Device {
             }
         );
 
-        let indices = Device::find_queue_family(instance, physical_device);
+        let indices = Device::find_queue_family(instance, physical_device, surface_details);
 
         return indices.is_complete();
     }
@@ -389,13 +445,12 @@ impl Device {
     fn find_queue_family(
         instance: &ash::Instance,
         physical_device: vk::PhysicalDevice,
+        surface_details: &SurfaceDetails,
     ) -> QueueFamilyIndices {
         let queue_families =
             unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
 
-        let mut queue_family_indices = QueueFamilyIndices {
-            graphics_family: None,
-        };
+        let mut queue_family_indices = QueueFamilyIndices::new();
 
         let mut index = 0;
         for queue_family in queue_families.iter() {
@@ -403,6 +458,21 @@ impl Device {
                 && queue_family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
             {
                 queue_family_indices.graphics_family = Some(index);
+            }
+
+            let is_present_supported = unsafe {
+                surface_details
+                    .surface_loader
+                    .get_physical_device_surface_support(
+                        physical_device,
+                        index as u32,
+                        surface_details.surface,
+                    )
+                    .unwrap()
+            };
+
+            if queue_family.queue_count > 0 && is_present_supported {
+                queue_family_indices.present_family = Some(index);
             }
 
             if queue_family_indices.is_complete() {
@@ -418,6 +488,7 @@ impl Device {
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
+            self.surface_loader.destroy_surface(self.surface, None);
             self.device.destroy_device(None);
 
             if VALIDATION.is_enable {
