@@ -57,7 +57,7 @@ impl DeviceExtensions {
 }
 
 struct SwapchainSupportDetail {
-    capabilities: vk::SurfaceCapabilitiesKHR,
+    _capabilities: vk::SurfaceCapabilitiesKHR,
     formats: Vec<vk::SurfaceFormatKHR>,
     present_modes: Vec<vk::PresentModeKHR>,
 }
@@ -565,7 +565,7 @@ impl Device {
                 .expect("Failed to query for surface present modes");
 
             SwapchainSupportDetail {
-                capabilities,
+                _capabilities: capabilities,
                 formats,
                 present_modes,
             }
