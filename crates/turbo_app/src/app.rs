@@ -43,6 +43,8 @@ impl App {
     pub fn new() -> Self {
         // Logging initialization
         let subscriber = FmtSubscriber::builder()
+            .with_line_number(true)
+            .without_time()
             .with_max_level(Level::TRACE)
             .finish();
 

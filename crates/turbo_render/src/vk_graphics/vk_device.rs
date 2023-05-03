@@ -14,6 +14,7 @@ use ash::extensions::mvk::MacOSSurface;
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::Surface;
 
+use std::collections::HashSet;
 use std::ffi::{c_char, CString};
 use std::os::raw::c_void;
 use std::ptr;
@@ -45,9 +46,29 @@ impl QueueFamilyIndices {
     }
 }
 
+struct DeviceExtensions {
+    pub names: [&'static str; 1],
+}
+
+impl DeviceExtensions {
+    pub fn get_raw_names() -> [*const c_char; 1] {
+        [ash::extensions::khr::Swapchain::name().as_ptr()]
+    }
+}
+
+struct SwapchainSupportDetail {
+    capabilities: vk::SurfaceCapabilitiesKHR,
+    formats: Vec<vk::SurfaceFormatKHR>,
+    present_modes: Vec<vk::PresentModeKHR>,
+}
+
 const VALIDATION: ValidationInfo = ValidationInfo {
     is_enable: true,
     required_validation_layers: ["VK_LAYER_KHRONOS_validation"],
+};
+
+const DEVICE_EXT: DeviceExtensions = DeviceExtensions {
+    names: ["VK_KHR_swapchain"],
 };
 
 #[derive(Resource, Clone)]
@@ -293,7 +314,6 @@ impl Device {
     ) -> (ash::Device, QueueFamilyIndices) {
         let indices = Device::find_queue_family(instance, physical_device, surface_details);
 
-        use std::collections::HashSet;
         let mut unique_queue_families = HashSet::new();
         unique_queue_families.insert(indices.graphics_family.unwrap());
         unique_queue_families.insert(indices.present_family.unwrap());
@@ -343,8 +363,8 @@ impl Device {
             } else {
                 ptr::null()
             },
-            enabled_extension_count: 0,
-            pp_enabled_extension_names: ptr::null(),
+            enabled_extension_count: DEVICE_EXT.names.len() as u32,
+            pp_enabled_extension_names: DeviceExtensions::get_raw_names().as_ptr(),
             p_enabled_features: &physical_device_features,
         };
 
@@ -438,8 +458,19 @@ impl Device {
         );
 
         let indices = Device::find_queue_family(instance, physical_device, surface_details);
+        let is_queue_family_supported = indices.is_complete();
 
-        return indices.is_complete();
+        let is_extension_supported =
+            Device::check_device_extension_suppot(instance, physical_device);
+        let is_swapchain_supported = if is_extension_supported {
+            let swapchain_support =
+                Device::query_swapchain_support(physical_device, surface_details);
+            !swapchain_support.formats.is_empty() && !swapchain_support.present_modes.is_empty()
+        } else {
+            false
+        };
+
+        return is_queue_family_supported && is_extension_supported && is_swapchain_supported;
     }
 
     fn find_queue_family(
@@ -482,6 +513,63 @@ impl Device {
             index += 1;
         }
         queue_family_indices
+    }
+
+    fn check_device_extension_suppot(
+        instance: &ash::Instance,
+        physical_device: vk::PhysicalDevice,
+    ) -> bool {
+        let available_ext = unsafe {
+            instance
+                .enumerate_device_extension_properties(physical_device)
+                .expect("Failed to get device extension properties!")
+        };
+
+        let mut available_extension_names = vec![];
+
+        //info!("Available Device Extensions:");
+        for extension in available_ext.iter() {
+            let ext_name = vk_to_string(&extension.extension_name);
+            //info!("Name: {}, Version: {}", ext_name, extension.spec_version);
+            available_extension_names.push(ext_name);
+        }
+
+        let mut required_extensions = HashSet::new();
+        for extension in DEVICE_EXT.names.iter() {
+            required_extensions.insert(extension.to_string());
+        }
+
+        for extension_name in available_extension_names.iter() {
+            required_extensions.remove(extension_name);
+        }
+
+        return required_extensions.is_empty();
+    }
+
+    fn query_swapchain_support(
+        physical_device: vk::PhysicalDevice,
+        surface_details: &SurfaceDetails,
+    ) -> SwapchainSupportDetail {
+        unsafe {
+            let capabilities = surface_details
+                .surface_loader
+                .get_physical_device_surface_capabilities(physical_device, surface_details.surface)
+                .expect("Failed to query for surface capabilities!");
+            let formats = surface_details
+                .surface_loader
+                .get_physical_device_surface_formats(physical_device, surface_details.surface)
+                .expect("Failed to query for surface formats!");
+            let present_modes = surface_details
+                .surface_loader
+                .get_physical_device_surface_present_modes(physical_device, surface_details.surface)
+                .expect("Failed to query for surface present modes");
+
+            SwapchainSupportDetail {
+                capabilities,
+                formats,
+                present_modes,
+            }
+        }
     }
 }
 

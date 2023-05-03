@@ -30,15 +30,15 @@ pub unsafe extern "system" fn vulkan_debug_utils_callback(
         _ => "[Unknown]",
     };
     let message = CStr::from_ptr((*p_callback_data).p_message);
-    println!("------------------");
+    //println!("------------------");
     if severity == "[Info]" {
-        info!("[Debug]{}{:?}", types, message);
+        //info!("[Debug]{}{:?}", types, message);
     } else if severity == "[Warning]" {
         warn!("[Debug]{}{:?}", types, message);
     } else if severity == "[Error]" {
         error!("[Debug]{}{:?}", types, message)
     } else {
-        trace!("[Debug]{}{}{:?}", severity, types, message);
+        //trace!("[Debug]{}{}{:?}", severity, types, message);
     }
 
     vk::FALSE
