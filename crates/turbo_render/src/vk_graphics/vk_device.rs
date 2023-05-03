@@ -28,6 +28,7 @@ struct QueueFamilyIndices {
     present_family: Option<u32>,
 }
 
+#[derive(Clone)]
 struct SurfaceDetails {
     surface_loader: ash::extensions::khr::Surface,
     surface: vk::SurfaceKHR,
@@ -74,15 +75,14 @@ const DEVICE_EXT: DeviceExtensions = DeviceExtensions {
 #[derive(Resource, Clone)]
 pub struct Device {
     _entry: ash::Entry,
+    device: ash::Device,
     instance: ash::Instance,
-    surface_loader: ash::extensions::khr::Surface,
-    surface: vk::SurfaceKHR,
+    surface_details: SurfaceDetails,
     debug_utils_loader: ash::extensions::ext::DebugUtils,
     debug_messenger: vk::DebugUtilsMessengerEXT,
-    _physical_device: vk::PhysicalDevice,
-    device: ash::Device,
-    _graphics_queue: vk::Queue,
-    _present_queue: vk::Queue,
+    physical_device: vk::PhysicalDevice,
+    graphics_queue: vk::Queue,
+    present_queue: vk::Queue,
 }
 
 impl Device {
@@ -107,14 +107,13 @@ impl Device {
         Device {
             _entry: entry,
             instance,
-            surface_loader: surface_details.surface_loader,
-            surface: surface_details.surface,
+            surface_details,
             debug_utils_loader,
             debug_messenger,
-            _physical_device: physical_device,
+            physical_device,
             device: logical_device,
-            _graphics_queue: graphics_queue,
-            _present_queue: present_queue,
+            graphics_queue,
+            present_queue,
         }
     }
 
@@ -571,12 +570,38 @@ impl Device {
             }
         }
     }
+
+    fn get_swapchain_support(&self) -> SwapchainSupportDetail {
+        Device::query_swapchain_support(self.physical_device, &self.surface_details)
+    }
+
+    fn get_instance(&self) -> &ash::Instance {
+        &self.instance
+    }
+
+    fn get_device(&self) -> &ash::Device {
+        &self.device
+    }
+
+    fn get_surface_details(&self) -> &SurfaceDetails {
+        &self.surface_details
+    }
+
+    fn get_present_queue(&self) -> &vk::Queue {
+        &self.present_queue
+    }
+
+    fn get_graphics_queue(&self) -> &vk::Queue {
+        &self.graphics_queue
+    }
 }
 
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
-            self.surface_loader.destroy_surface(self.surface, None);
+            self.surface_details
+                .surface_loader
+                .destroy_surface(self.surface_details.surface, None);
             self.device.destroy_device(None);
 
             if VALIDATION.is_enable {
