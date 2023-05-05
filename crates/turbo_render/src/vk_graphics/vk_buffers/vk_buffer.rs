@@ -161,11 +161,8 @@ impl Buffer {
 
         self.name = String::from(name);
     }
-}
 
-// This needs to be done in cleanup (onTerminate?) and not on Drop of the object
-impl Drop for Buffer {
-    fn drop(&mut self) {
+    pub fn cleanup(&mut self) {
         unsafe {
             if let Some(allocation) = self.allocation.take() {
                 self.allocator

@@ -618,11 +618,8 @@ impl Device {
     pub fn get_debug_utils_loader(&self) -> &DebugUtils {
         &self.debug_utils_loader
     }
-}
 
-// This needs to be done in cleanup (onTerminate?) and not on Drop of the object
-impl Drop for Device {
-    fn drop(&mut self) {
+    pub fn cleanup(&mut self) {
         unsafe {
             self.surface_details
                 .surface_loader

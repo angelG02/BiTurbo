@@ -64,11 +64,8 @@ impl Fence {
                 .expect("Failed to reset Fence.");
         }
     }
-}
 
-// This needs to be done in cleanup (onTerminate?) and not on Drop of the object
-impl Drop for Fence {
-    fn drop(&mut self) {
+    pub fn cleanup(&mut self) {
         unsafe {
             self.device.get_device().destroy_fence(self.fence, None);
         }

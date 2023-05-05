@@ -176,11 +176,8 @@ impl Image {
     pub fn sample_count(&self) -> vk::SampleCountFlags {
         self.sample_count
     }
-}
 
-// This needs to be done in cleanup (onTerminate?) and not on Drop of the object
-impl Drop for Image {
-    fn drop(&mut self) {
+    pub fn cleanup(&mut self) {
         unsafe {
             self.device.get_device().free_memory(self.memory, None);
 

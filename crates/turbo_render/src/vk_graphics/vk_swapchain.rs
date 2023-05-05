@@ -342,11 +342,8 @@ impl SwapChain {
     pub fn get_swapchain_images(&self) -> &Vec<vk::Image> {
         &self.swapchain_images
     }
-}
 
-// This needs to be done in cleanup (onTerminate?) and not on Drop of the object
-impl Drop for SwapChain {
-    fn drop(&mut self) {
+    pub fn cleanup(&mut self) {
         unsafe {
             for &imageview in self.swapchain_image_views.iter() {
                 self.device.get_device().destroy_image_view(imageview, None);
