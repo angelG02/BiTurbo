@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use std::os::raw::c_void;
 use std::ptr;
 
-use turbo_core::prelude::trace::{error, info, trace, warn};
+use turbo_core::prelude::trace::{error, warn};
 pub struct ValidationInfo {
     pub is_enable: bool,
     pub required_validation_layers: [&'static str; 1],

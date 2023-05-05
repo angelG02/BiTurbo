@@ -23,15 +23,16 @@ use bevy_ecs::prelude::*;
 
 use super::vk_utils::platforms;
 
-struct QueueFamilyIndices {
-    graphics_family: Option<u32>,
-    present_family: Option<u32>,
+#[derive(Clone)]
+pub struct QueueFamilyIndices {
+    pub graphics_family: Option<u32>,
+    pub present_family: Option<u32>,
 }
 
 #[derive(Clone)]
-struct SurfaceDetails {
-    surface_loader: ash::extensions::khr::Surface,
-    surface: vk::SurfaceKHR,
+pub struct SurfaceDetails {
+    pub surface_loader: ash::extensions::khr::Surface,
+    pub surface: vk::SurfaceKHR,
 }
 
 impl QueueFamilyIndices {
@@ -57,10 +58,10 @@ impl DeviceExtensions {
     }
 }
 
-struct SwapchainSupportDetail {
-    _capabilities: vk::SurfaceCapabilitiesKHR,
-    formats: Vec<vk::SurfaceFormatKHR>,
-    present_modes: Vec<vk::PresentModeKHR>,
+pub struct SwapchainSupportDetail {
+    pub capabilities: vk::SurfaceCapabilitiesKHR,
+    pub formats: Vec<vk::SurfaceFormatKHR>,
+    pub present_modes: Vec<vk::PresentModeKHR>,
 }
 
 const VALIDATION: ValidationInfo = ValidationInfo {
@@ -81,8 +82,10 @@ pub struct Device {
     debug_utils_loader: ash::extensions::ext::DebugUtils,
     debug_messenger: vk::DebugUtilsMessengerEXT,
     physical_device: vk::PhysicalDevice,
+    queue_indices: QueueFamilyIndices,
     graphics_queue: vk::Queue,
     present_queue: vk::Queue,
+    buffer_device_address_loader: ash::extensions::khr::BufferDeviceAddress,
 }
 
 impl Device {
@@ -104,6 +107,9 @@ impl Device {
         let present_queue =
             unsafe { logical_device.get_device_queue(family_indices.present_family.unwrap(), 0) };
 
+        let buffer_device_address_loader =
+            ash::extensions::khr::BufferDeviceAddress::new(&instance, &logical_device);
+
         Device {
             _entry: entry,
             instance,
@@ -112,8 +118,10 @@ impl Device {
             debug_messenger,
             physical_device,
             device: logical_device,
+            queue_indices: family_indices,
             graphics_queue,
             present_queue,
+            buffer_device_address_loader,
         }
     }
 
@@ -564,38 +572,55 @@ impl Device {
                 .expect("Failed to query for surface present modes");
 
             SwapchainSupportDetail {
-                _capabilities: capabilities,
+                capabilities,
                 formats,
                 present_modes,
             }
         }
     }
 
-    fn get_swapchain_support(&self) -> SwapchainSupportDetail {
+    pub fn get_swapchain_support(&self) -> SwapchainSupportDetail {
         Device::query_swapchain_support(self.physical_device, &self.surface_details)
     }
 
-    fn get_instance(&self) -> &ash::Instance {
+    pub fn get_instance(&self) -> &ash::Instance {
         &self.instance
     }
 
-    fn get_device(&self) -> &ash::Device {
+    pub fn get_physical_device(&self) -> &vk::PhysicalDevice {
+        &self.physical_device
+    }
+
+    pub fn get_device(&self) -> &ash::Device {
         &self.device
     }
 
-    fn get_surface_details(&self) -> &SurfaceDetails {
+    pub fn get_surface_details(&self) -> &SurfaceDetails {
         &self.surface_details
     }
 
-    fn get_present_queue(&self) -> &vk::Queue {
+    pub fn get_present_queue(&self) -> &vk::Queue {
         &self.present_queue
     }
 
-    fn get_graphics_queue(&self) -> &vk::Queue {
+    pub fn get_graphics_queue(&self) -> &vk::Queue {
         &self.graphics_queue
+    }
+
+    pub fn get_queue_indices(&self) -> &QueueFamilyIndices {
+        &self.queue_indices
+    }
+
+    pub fn get_buffer_device_address_loader(&self) -> &ash::extensions::khr::BufferDeviceAddress {
+        &self.buffer_device_address_loader
+    }
+
+    pub fn get_debug_utils_loader(&self) -> &DebugUtils {
+        &self.debug_utils_loader
     }
 }
 
+// This needs to be done in cleanup (onTerminate?) and not on Drop of the object
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {

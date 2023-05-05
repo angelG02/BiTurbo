@@ -127,6 +127,11 @@ impl App {
         self
     }
 
+    pub fn insert_resource<R: Resource>(&mut self, resource: R) -> &mut Self {
+        self.world.insert_resource(resource);
+        self
+    }
+
     // TODO: Handle this somewhere else xd
 
     // fn on_window_resize(event: &Event) -> bool {
