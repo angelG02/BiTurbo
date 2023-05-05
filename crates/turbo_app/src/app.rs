@@ -4,6 +4,12 @@ use turbo_core::prelude::trace::*;
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnStartup;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnEvent;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnBeginUpdateLoop;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
@@ -16,10 +22,7 @@ pub struct OnMainUpdate;
 pub struct OnMainPostUpdate;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnStartup;
-
-#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnEvent;
+pub struct OnShutdown;
 
 static mut APP: Option<Box<App>> = None;
 
@@ -57,11 +60,15 @@ impl App {
 
         let mut schedules = world.resource_mut::<Schedules>();
 
-        // On Begin Update Loop schedule (first schedule that will run in the update loop)
-        let on_event = Schedule::new();
-        schedules.insert(OnEvent, on_event);
+        // Startup schedule (ran once on program/game startup)
+        let on_startup = Schedule::new();
+        schedules.insert(OnStartup, on_startup);
 
-        // On Event schedule (Window's poll_events is called here)
+        // Begin Update Loop schedule (first schedule that will run in the update loop)
+        let on_begin_update = Schedule::new();
+        schedules.insert(OnBeginUpdateLoop, on_begin_update);
+
+        // Event schedule (Window's poll_events is called here)
         let on_event = Schedule::new();
         schedules.insert(OnEvent, on_event);
 
@@ -69,10 +76,18 @@ impl App {
         let pre_update = Schedule::new();
         schedules.insert(OnMainPreUpdate, pre_update);
 
+        // Update schedule
+        let update = Schedule::new();
+        schedules.insert(OnMainUpdate, update);
+
         // Post update schedule
         let mut post_update = Schedule::new();
         post_update.add_systems((apply_system_buffers, World::clear_trackers).chain());
         schedules.insert(OnMainPostUpdate, post_update);
+
+        // Program shutdown schedule that will run when the program is closed
+        let on_shutdown = Schedule::new();
+        schedules.insert(OnShutdown, on_shutdown);
 
         Self {
             world,
@@ -94,6 +109,7 @@ impl App {
             current_time = new_time;
 
             //trace!("Frame time: {delta_time}s");
+            self.world.run_schedule(OnBeginUpdateLoop);
 
             self.world.run_schedule(OnEvent);
 
@@ -103,6 +119,8 @@ impl App {
 
             self.world.run_schedule(OnMainPostUpdate);
         }
+
+        self.world.run_schedule(OnShutdown);
     }
 
     pub fn add_systems<M>(
