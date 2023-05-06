@@ -1,1 +1,3 @@
-pub use crate::{app::prelude::*, core::prelude::*, ecs::prelude::*, window::prelude::*};
+pub use crate::{
+    app::prelude::*, core::prelude::*, ecs::prelude::*, render::prelude::*, window::prelude::*,
+};
