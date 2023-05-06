@@ -2,11 +2,12 @@
 use std::sync::Arc;
 
 use ash::{self, vk};
-use bevy_ecs::system::{NonSend, Query, Res, SystemState};
+use bevy_ecs::system::{NonSend, Query, Res, ResMut, SystemState};
+use bevy_ecs::world::World;
 
 use crate::prelude::vk_device::Device;
 use crate::prelude::vk_swapchain::SwapChain;
-use turbo_app::prelude::Plugin;
+use turbo_app::prelude::{OnShutdown, Plugin};
 use turbo_window::window::Window;
 
 pub struct VulkanRendererPlugin;
@@ -27,6 +28,17 @@ impl Plugin for VulkanRendererPlugin {
             window_height as u32,
         );
         app.insert_resource(device.clone())
-            .insert_resource(swapchain.clone());
+            .insert_resource(swapchain.clone())
+            .add_systems(OnShutdown, (cleanup, || {}));
     }
+}
+
+fn cleanup(world: &mut World) {
+    let mut system_state: SystemState<(ResMut<Device>, ResMut<SwapChain>)> =
+        SystemState::new(world);
+
+    let (mut device, mut swapchain) = system_state.get_mut(world);
+
+    swapchain.as_mut().cleanup();
+    device.as_mut().cleanup();
 }

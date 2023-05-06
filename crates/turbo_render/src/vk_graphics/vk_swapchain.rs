@@ -344,6 +344,18 @@ impl SwapChain {
     }
 
     pub fn cleanup(&mut self) {
+        for semaphore in &mut self.image_available_semaphores {
+            semaphore.cleanup();
+        }
+
+        for semaphore in &mut self.render_finished_semaphores {
+            semaphore.cleanup();
+        }
+
+        for fence in &mut self.in_flight_fences {
+            fence.cleanup();
+        }
+
         unsafe {
             for &imageview in self.swapchain_image_views.iter() {
                 self.device.get_device().destroy_image_view(imageview, None);
