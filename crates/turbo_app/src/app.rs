@@ -10,16 +10,7 @@ pub struct OnStartup;
 pub struct OnEvent;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnBeginUpdateLoop;
-
-#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnMainPreUpdate;
-
-#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnMainUpdate;
-
-#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnMainPostUpdate;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnShutdown;
@@ -64,26 +55,13 @@ impl App {
         let on_startup = Schedule::new();
         schedules.insert(OnStartup, on_startup);
 
-        // Begin Update Loop schedule (first schedule that will run in the update loop)
-        let on_begin_update = Schedule::new();
-        schedules.insert(OnBeginUpdateLoop, on_begin_update);
-
         // Event schedule (Window's poll_events is called here)
         let on_event = Schedule::new();
         schedules.insert(OnEvent, on_event);
 
-        // Pre update schedule
-        let pre_update = Schedule::new();
-        schedules.insert(OnMainPreUpdate, pre_update);
-
         // Update schedule
         let update = Schedule::new();
         schedules.insert(OnMainUpdate, update);
-
-        // Post update schedule
-        let mut post_update = Schedule::new();
-        post_update.add_systems((apply_system_buffers, World::clear_trackers).chain());
-        schedules.insert(OnMainPostUpdate, post_update);
 
         // Program shutdown schedule that will run when the program is closed
         let on_shutdown = Schedule::new();
@@ -108,16 +86,9 @@ impl App {
             let _delta_time = frame_time as f32 * 0.000000001;
             current_time = new_time;
 
-            //trace!("Frame time: {delta_time}s");
-            self.world.run_schedule(OnBeginUpdateLoop);
-
             self.world.run_schedule(OnEvent);
 
-            self.world.run_schedule(OnMainPreUpdate);
-
             self.world.run_schedule(OnMainUpdate);
-
-            self.world.run_schedule(OnMainPostUpdate);
         }
 
         self.world.run_schedule(OnShutdown);

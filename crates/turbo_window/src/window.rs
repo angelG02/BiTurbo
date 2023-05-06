@@ -162,7 +162,7 @@ impl Plugin for WindowPlugin {
             schedule.add_system(poll_events);
         }
 
-        if let Some(schedule) = schedules.get_mut(&OnMainPreUpdate) {
+        if let Some(schedule) = schedules.get_mut(&OnEvent) {
             schedule.add_system(close_window);
         }
     }
