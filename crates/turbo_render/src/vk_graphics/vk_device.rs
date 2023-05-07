@@ -633,4 +633,41 @@ impl Device {
             self.instance.destroy_instance(None);
         }
     }
+
+    pub fn get_max_sample_count(&self) -> vk::SampleCountFlags {
+        let physical_device_properties = unsafe {
+            self.instance
+                .get_physical_device_properties(self.physical_device)
+        };
+
+        let count = std::cmp::min(
+            physical_device_properties
+                .limits
+                .framebuffer_color_sample_counts,
+            physical_device_properties
+                .limits
+                .framebuffer_depth_sample_counts,
+        );
+
+        if count.contains(vk::SampleCountFlags::TYPE_64) {
+            return vk::SampleCountFlags::TYPE_64;
+        }
+        if count.contains(vk::SampleCountFlags::TYPE_32) {
+            return vk::SampleCountFlags::TYPE_32;
+        }
+        if count.contains(vk::SampleCountFlags::TYPE_16) {
+            return vk::SampleCountFlags::TYPE_16;
+        }
+        if count.contains(vk::SampleCountFlags::TYPE_8) {
+            return vk::SampleCountFlags::TYPE_8;
+        }
+        if count.contains(vk::SampleCountFlags::TYPE_4) {
+            return vk::SampleCountFlags::TYPE_4;
+        }
+        if count.contains(vk::SampleCountFlags::TYPE_2) {
+            return vk::SampleCountFlags::TYPE_2;
+        }
+
+        vk::SampleCountFlags::TYPE_1
+    }
 }

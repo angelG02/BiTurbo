@@ -5,6 +5,19 @@ pub use std::rc::Rc;
 pub use std::sync::Arc;
 pub use std::sync::{Mutex, MutexGuard};
 
+pub fn get_binary_blob(asset_path: &str) -> Vec<u8> {
+    use std::fs::File;
+    use std::io::Read;
+
+    let spv_file = File::open(&asset_path).expect(&format!(
+        "Failed to read binary file at \"{:?}\"",
+        asset_path
+    ));
+    let bytes_code: Vec<u8> = spv_file.bytes().filter_map(|byte| byte.ok()).collect();
+
+    bytes_code
+}
+
 #[derive(Clone)]
 pub struct RcCell<T> {
     value: Rc<RefCell<T>>,
