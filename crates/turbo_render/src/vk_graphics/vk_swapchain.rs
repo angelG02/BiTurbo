@@ -5,6 +5,7 @@ use ash::{self, vk};
 use crate::prelude::vk_buffers::vk_image::Image;
 use crate::prelude::vk_device::Device;
 use crate::prelude::vk_fence::Fence;
+use crate::prelude::vk_render_pass::RenderPass;
 use crate::prelude::vk_semaphore::Semaphore;
 
 use bevy_ecs::prelude::*;
@@ -137,6 +138,58 @@ impl SwapChain {
             current_frame: 0,
             current_image: 0,
         }
+    }
+
+    pub fn build_framebuffers(&mut self, render_pass: &RenderPass, render_image: &mut Image) {
+        assert_eq!(
+            self.frame_buffers.len(),
+            0,
+            "Failed to build framebuffers. (Framebuffers can only be build once)"
+        );
+
+        let mut depth_img = Image::new(
+            self.device.clone(),
+            self.swapchain_extent.width,
+            self.swapchain_extent.height,
+            1,
+            self.depth_format,
+            render_image.sample_count(),
+            vk::ImageTiling::OPTIMAL,
+            vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT,
+            vk::MemoryPropertyFlags::DEVICE_LOCAL,
+            &self.device.get_physical_device_mem_properties(),
+        );
+
+        for &image_view in self.swapchain_image_views.iter() {
+            let attachments = [
+                render_image.get_image_view(),
+                depth_img.get_image_view(),
+                image_view,
+            ];
+
+            let framebuffer_create_info = vk::FramebufferCreateInfo {
+                s_type: vk::StructureType::FRAMEBUFFER_CREATE_INFO,
+                p_next: std::ptr::null(),
+                flags: vk::FramebufferCreateFlags::empty(),
+                render_pass: render_pass.get_render_pass(),
+                attachment_count: attachments.len() as u32,
+                p_attachments: attachments.as_ptr(),
+                width: self.swapchain_extent.width,
+                height: self.swapchain_extent.height,
+                layers: 1,
+            };
+
+            let framebuffer = unsafe {
+                self.device
+                    .get_device()
+                    .create_framebuffer(&framebuffer_create_info, None)
+                    .expect("Failed to create Framebuffer!")
+            };
+
+            self.frame_buffers.push(framebuffer);
+        }
+
+        self.depth_image = Some(depth_img);
     }
 
     fn choose_swapchain_format(
@@ -356,9 +409,19 @@ impl SwapChain {
             fence.cleanup();
         }
 
+        if let Some(depth_image) = &mut self.depth_image {
+            depth_image.cleanup();
+        }
+
         unsafe {
             for &imageview in self.swapchain_image_views.iter() {
                 self.device.get_device().destroy_image_view(imageview, None);
+            }
+
+            for &framebuffer in self.frame_buffers.iter() {
+                self.device
+                    .get_device()
+                    .destroy_framebuffer(framebuffer, None);
             }
 
             self.swapchain_loader

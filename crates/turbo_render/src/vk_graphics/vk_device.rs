@@ -670,4 +670,11 @@ impl Device {
 
         vk::SampleCountFlags::TYPE_1
     }
+
+    pub fn get_physical_device_mem_properties(&self) -> vk::PhysicalDeviceMemoryProperties {
+        unsafe {
+            self.instance
+                .get_physical_device_memory_properties(self.physical_device)
+        }
+    }
 }

@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
 use ash::vk;
+use bevy_ecs::prelude::*;
 
 use crate::prelude::vk_buffers::vk_buffer::Buffer;
 use crate::prelude::vk_device::Device;
 
-#[derive(Clone)]
+#[derive(Resource, Clone)]
 pub struct Image {
     device: Arc<Device>,
     image: vk::Image,
