@@ -6,6 +6,7 @@ use bevy_ecs::system::{NonSend, Query, Res, ResMut, SystemState};
 use bevy_ecs::world::World;
 
 use crate::prelude::vk_buffers::vk_image::Image;
+use crate::prelude::vk_command_pool::CommandPool;
 use crate::prelude::vk_device::Device;
 use crate::prelude::vk_pipeline::Pipeline;
 use crate::prelude::vk_render_pass::RenderPass;
@@ -70,11 +71,14 @@ impl Plugin for VulkanRendererPlugin {
             vk::TRUE,
         );
 
+        let command_pool = CommandPool::new(Arc::new(device.clone()));
+
         app.insert_resource(device.clone())
             .insert_resource(swapchain.clone())
             .insert_resource(render_image.clone())
             .insert_resource(render_pass.clone())
             .insert_resource(pipeline.clone())
+            .insert_resource(command_pool.clone())
             .add_systems(OnShutdown, (cleanup, || {}));
     }
 }
@@ -86,11 +90,19 @@ fn cleanup(world: &mut World) {
         ResMut<Pipeline>,
         ResMut<RenderPass>,
         ResMut<Image>,
+        ResMut<CommandPool>,
     )> = SystemState::new(world);
 
-    let (mut device, mut swapchain, mut pipeline, mut render_pass, mut render_image) =
-        system_state.get_mut(world);
+    let (
+        mut device,
+        mut swapchain,
+        mut pipeline,
+        mut render_pass,
+        mut render_image,
+        mut command_pool,
+    ) = system_state.get_mut(world);
 
+    command_pool.cleanup();
     render_image.cleanup();
     pipeline.as_mut().cleanup();
     render_pass.as_mut().cleanup();

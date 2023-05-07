@@ -1,4 +1,5 @@
 pub mod vk_buffers;
+pub mod vk_command_pool;
 pub mod vk_device;
 pub mod vk_fence;
 pub mod vk_pipeline;
