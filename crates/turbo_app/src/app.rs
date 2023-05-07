@@ -13,6 +13,9 @@ pub struct OnEvent;
 pub struct OnMainUpdate;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnMainRender;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnShutdown;
 
 static mut APP: Option<Box<App>> = None;
@@ -63,6 +66,10 @@ impl App {
         let update = Schedule::new();
         schedules.insert(OnMainUpdate, update);
 
+        // Update schedule
+        let render = Schedule::new();
+        schedules.insert(OnMainRender, render);
+
         // Program shutdown schedule that will run when the program is closed
         let on_shutdown = Schedule::new();
         schedules.insert(OnShutdown, on_shutdown);
@@ -89,6 +96,8 @@ impl App {
             self.world.run_schedule(OnEvent);
 
             self.world.run_schedule(OnMainUpdate);
+
+            self.world.run_schedule(OnMainRender);
         }
 
         self.world.run_schedule(OnShutdown);
