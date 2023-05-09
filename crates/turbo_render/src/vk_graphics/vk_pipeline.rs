@@ -5,7 +5,7 @@ use crate::prelude::vk_device::Device;
 use crate::prelude::vk_render_pass::RenderPass;
 use crate::prelude::vk_shader::ShaderModule;
 
-#[derive(Resource, Clone)]
+#[derive(Resource)]
 pub struct Pipeline {
     shader_modules: Vec<ShaderModule>,
     pipeline_layout: vk::PipelineLayout,

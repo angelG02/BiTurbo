@@ -5,7 +5,7 @@ use bevy_ecs::prelude::*;
 
 use crate::prelude::vk_device::Device;
 
-#[derive(Resource, Clone)]
+#[derive(Resource)]
 pub struct RenderPass {
     render_pass: vk::RenderPass,
     msaa_samples: vk::SampleCountFlags,

@@ -4,7 +4,7 @@ use bevy_ecs::prelude::*;
 use crate::prelude::vk_buffers::vk_buffer::Buffer;
 use crate::prelude::vk_device::Device;
 
-#[derive(Resource, Clone)]
+#[derive(Resource)]
 pub struct Image {
     image: vk::Image,
     image_view: Option<vk::ImageView>,

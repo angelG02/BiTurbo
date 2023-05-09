@@ -4,7 +4,6 @@ use ash::vk;
 
 use crate::prelude::vk_device::Device;
 
-#[derive(Clone)]
 pub struct Fence {
     fence: vk::Fence,
 }

@@ -9,7 +9,7 @@ use crate::prelude::vk_fence::Fence;
 use crate::prelude::vk_semaphore::Semaphore;
 use crate::prelude::vk_swapchain::MAX_FRAMES_IN_FLIGHT;
 
-#[derive(Resource, Clone)]
+#[derive(Resource)]
 pub struct CommandQueue {
     queue: vk::Queue,
     command_buffers: Vec<CommandBuffer>,

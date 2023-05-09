@@ -9,7 +9,6 @@ use crate::prelude::vk_pipeline::Pipeline;
 use crate::prelude::vk_render_pass::RenderPass;
 use crate::prelude::vk_swapchain::SwapChain;
 
-#[derive(Clone)]
 pub struct CommandBuffer {
     //_allocator: Arc<Mutex<Allocator>>,
     cmd_buffer: vk::CommandBuffer,

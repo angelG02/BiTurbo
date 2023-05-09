@@ -10,7 +10,7 @@ use bevy_ecs::prelude::*;
 
 pub const MAX_FRAMES_IN_FLIGHT: usize = 3;
 
-#[derive(Resource, Clone)]
+#[derive(Resource)]
 pub struct SwapChain {
     swapchain_loader: ash::extensions::khr::Swapchain,
     swapchain: vk::SwapchainKHR,

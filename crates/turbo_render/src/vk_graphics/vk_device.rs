@@ -73,7 +73,7 @@ const DEVICE_EXT: DeviceExtensions = DeviceExtensions {
     names: ["VK_KHR_swapchain"],
 };
 
-#[derive(Resource, Clone)]
+#[derive(Resource)]
 pub struct Device {
     _entry: ash::Entry,
     device: ash::Device,

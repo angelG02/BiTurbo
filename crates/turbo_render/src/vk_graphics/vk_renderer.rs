@@ -68,12 +68,12 @@ impl Plugin for VulkanRendererPlugin {
         let command_pool = CommandPool::new(&device);
         let command_queue = CommandQueue::new(&device, *device.get_graphics_queue(), &command_pool);
 
-        app.insert_resource(device.clone())
-            .insert_resource(swapchain.clone())
-            .insert_resource(render_image.clone())
-            .insert_resource(render_pass.clone())
-            .insert_resource(pipeline.clone())
-            .insert_resource(command_pool.clone())
+        app.insert_resource(device)
+            .insert_resource(swapchain)
+            .insert_resource(render_image)
+            .insert_resource(render_pass)
+            .insert_resource(pipeline)
+            .insert_resource(command_pool)
             .insert_resource(command_queue)
             .add_systems(OnMainRender, (render_frame, || {}))
             .add_systems(OnShutdown, (cleanup, || {}));

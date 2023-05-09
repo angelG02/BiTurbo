@@ -3,7 +3,6 @@ use ash::*;
 use crate::prelude::vk_device::Device;
 use turbo_core::util::get_binary_blob;
 
-#[derive(Clone)]
 pub struct ShaderModule {
     shader_module: vk::ShaderModule,
     shader_stage_flags: vk::ShaderStageFlags,
