@@ -12,7 +12,6 @@ use crate::prelude::vk_swapchain::SwapChain;
 #[derive(Clone)]
 pub struct CommandBuffer {
     //_allocator: Arc<Mutex<Allocator>>,
-    _cmd_pool: Arc<CommandPool>,
     cmd_buffer: vk::CommandBuffer,
 
     pipeline: Option<Arc<Pipeline>>,
@@ -22,7 +21,7 @@ impl CommandBuffer {
     pub fn new(
         device: &Device,
         //allocator: Arc<Mutex<Allocator>>,
-        command_pool: Arc<CommandPool>,
+        command_pool: &CommandPool,
     ) -> Self {
         let command_buffer_allocate_info = vk::CommandBufferAllocateInfo {
             s_type: vk::StructureType::COMMAND_BUFFER_ALLOCATE_INFO,
@@ -41,7 +40,6 @@ impl CommandBuffer {
 
         Self {
             //_allocator: allocator,
-            _cmd_pool: command_pool,
             cmd_buffer: command_buffers[0],
             pipeline: None,
         }
@@ -169,9 +167,7 @@ impl CommandBuffer {
         }
     }
 
-    pub fn bind_graphics_pipeline(&mut self, device: &Device, pipeline: Arc<Pipeline>) {
-        self.pipeline = Some(pipeline.clone());
-
+    pub fn bind_graphics_pipeline(&mut self, device: &Device, pipeline: &Pipeline) {
         unsafe {
             device.get_device().cmd_bind_pipeline(
                 self.cmd_buffer,

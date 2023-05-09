@@ -1,18 +1,14 @@
-#![allow(unused)]
-use std::sync::{Arc, Mutex};
-
 use ash::{self, vk};
-use bevy_ecs::system::{NonSend, Query, Res, ResMut, SystemState};
+use bevy_ecs::system::{NonSend, ResMut, SystemState};
 use bevy_ecs::world::World;
 
-use crate::prelude::vk_buffers::vk_command_buffer::CommandBuffer;
 use crate::prelude::vk_buffers::vk_image::Image;
 use crate::prelude::vk_command_pool::CommandPool;
 use crate::prelude::vk_command_queue::CommandQueue;
 use crate::prelude::vk_device::Device;
 use crate::prelude::vk_pipeline::Pipeline;
 use crate::prelude::vk_render_pass::RenderPass;
-use crate::prelude::vk_swapchain::{SwapChain, MAX_FRAMES_IN_FLIGHT};
+use crate::prelude::vk_swapchain::SwapChain;
 
 use turbo_app::prelude::{OnMainRender, OnShutdown, Plugin};
 use turbo_window::window::Window;
@@ -70,11 +66,7 @@ impl Plugin for VulkanRendererPlugin {
         );
 
         let command_pool = CommandPool::new(&device);
-        let mut command_queue = CommandQueue::new(
-            &device,
-            *device.get_graphics_queue(),
-            Arc::new(command_pool.clone()),
-        );
+        let command_queue = CommandQueue::new(&device, *device.get_graphics_queue(), &command_pool);
 
         app.insert_resource(device.clone())
             .insert_resource(swapchain.clone())
@@ -97,7 +89,7 @@ fn render_frame(world: &mut World) {
         ResMut<CommandQueue>,
     )> = SystemState::new(world);
 
-    let (mut device, mut swapchain, mut pipeline, mut render_pass, mut command_queue) =
+    let (device, mut swapchain, pipeline, render_pass, mut command_queue) =
         system_state.get_mut(world);
 
     swapchain.next_image(&device);
@@ -111,7 +103,7 @@ fn render_frame(world: &mut World) {
 
     command_buffer.begin_render_pass(&device, &render_pass, &swapchain);
 
-    command_buffer.bind_graphics_pipeline(&device, Arc::new(pipeline.clone()));
+    command_buffer.bind_graphics_pipeline(&device, &pipeline);
 
     command_buffer.draw(&device, 3, 1, 0, 0);
 
@@ -124,7 +116,7 @@ fn render_frame(world: &mut World) {
 
     let fence = command_queue.submit_command_buffer(
         device.as_ref(),
-        Arc::new(Mutex::new(command_buffer.clone())),
+        &command_buffer,
         Some(&vec![&image_available]),
         Some(&vec![&render_finished]),
     );

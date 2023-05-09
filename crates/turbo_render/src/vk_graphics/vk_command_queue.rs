@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use ash::vk;
 use bevy_ecs::prelude::*;
 //use gpu_allocator::vulkan::*;
@@ -22,11 +20,11 @@ impl CommandQueue {
         device: &Device,
         //allocator: Arc<Mutex<Allocator>>,
         queue: vk::Queue,
-        command_pool: Arc<CommandPool>,
+        command_pool: &CommandPool,
     ) -> Self {
         let mut command_buffers = Vec::new();
         for _ in 0..MAX_FRAMES_IN_FLIGHT {
-            command_buffers.push(CommandBuffer::new(device, Arc::clone(&command_pool)))
+            command_buffers.push(CommandBuffer::new(device, command_pool))
         }
         Self {
             queue,
@@ -41,7 +39,7 @@ impl CommandQueue {
     pub fn submit_command_buffer(
         &mut self,
         device: &Device,
-        cmd_buffer: Arc<Mutex<CommandBuffer>>,
+        cmd_buffer: &CommandBuffer,
         wait_semaphores: Option<&Vec<&Semaphore>>,
         signal_semaphores: Option<&Vec<&Semaphore>>,
     ) -> Fence {
@@ -56,7 +54,7 @@ impl CommandQueue {
     pub fn submit_command_buffers(
         &mut self,
         device: &Device,
-        cmd_buffers: &Vec<Arc<Mutex<CommandBuffer>>>,
+        cmd_buffers: &Vec<&CommandBuffer>,
         wait_semaphores: Option<&Vec<&Semaphore>>,
         signal_semaphores: Option<&Vec<&Semaphore>>,
     ) -> Fence {
@@ -67,7 +65,7 @@ impl CommandQueue {
         let mut cmd_buffers_raw = Vec::new();
 
         for cmd_buffer in cmd_buffers {
-            cmd_buffers_raw.push(cmd_buffer.as_ref().lock().unwrap().get_command_buffer());
+            cmd_buffers_raw.push(cmd_buffer.get_command_buffer());
         }
 
         let (wait_semaphore_count, p_wait_semaphores) = match wait_semaphores {
