@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use ash::{self, vk};
 
 use crate::prelude::vk_buffers::vk_image::Image;
@@ -14,8 +12,6 @@ pub const MAX_FRAMES_IN_FLIGHT: usize = 3;
 
 #[derive(Resource, Clone)]
 pub struct SwapChain {
-    device: Arc<Device>,
-
     swapchain_loader: ash::extensions::khr::Swapchain,
     swapchain: vk::SwapchainKHR,
     color_format: vk::Format,
@@ -37,7 +33,7 @@ pub struct SwapChain {
 }
 
 impl SwapChain {
-    pub fn new(device: Arc<Device>, width: u32, height: u32) -> SwapChain {
+    pub fn new(device: &Device, width: u32, height: u32) -> SwapChain {
         let swapchain_support = device.get_swapchain_support();
 
         let surface_format = SwapChain::choose_swapchain_format(&swapchain_support.formats);
@@ -104,16 +100,16 @@ impl SwapChain {
         };
 
         let swapchain_image_views =
-            SwapChain::create_image_views(device.clone(), surface_format.format, &swapchain_images);
+            SwapChain::create_image_views(device, surface_format.format, &swapchain_images);
 
         let mut image_available_semaphores = Vec::new();
         let mut render_finished_semaphores = Vec::new();
         let mut in_flight_fences = Vec::new();
 
         for _ in 0..MAX_FRAMES_IN_FLIGHT {
-            image_available_semaphores.push(Semaphore::new(device.clone()));
-            render_finished_semaphores.push(Semaphore::new(device.clone()));
-            in_flight_fences.push(Fence::new(device.clone(), true));
+            image_available_semaphores.push(Semaphore::new(device));
+            render_finished_semaphores.push(Semaphore::new(device));
+            in_flight_fences.push(Fence::new(device, true));
         }
 
         let depth_format = SwapChain::get_optimal_depth_format(
@@ -122,7 +118,6 @@ impl SwapChain {
         );
 
         Self {
-            device: device.clone(),
             swapchain_loader,
             swapchain,
             color_format: surface_format.format,
@@ -140,7 +135,12 @@ impl SwapChain {
         }
     }
 
-    pub fn build_framebuffers(&mut self, render_pass: &RenderPass, render_image: &mut Image) {
+    pub fn build_framebuffers(
+        &mut self,
+        device: &Device,
+        render_pass: &RenderPass,
+        render_image: &mut Image,
+    ) {
         assert_eq!(
             self.frame_buffers.len(),
             0,
@@ -148,7 +148,7 @@ impl SwapChain {
         );
 
         let mut depth_img = Image::new(
-            self.device.clone(),
+            device,
             self.swapchain_extent.width,
             self.swapchain_extent.height,
             1,
@@ -157,13 +157,13 @@ impl SwapChain {
             vk::ImageTiling::OPTIMAL,
             vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT,
             vk::MemoryPropertyFlags::DEVICE_LOCAL,
-            &self.device.get_physical_device_mem_properties(),
+            &device.get_physical_device_mem_properties(),
         );
 
         for &image_view in self.swapchain_image_views.iter() {
             let attachments = [
-                render_image.get_image_view(),
-                depth_img.get_image_view(),
+                render_image.get_image_view(device),
+                depth_img.get_image_view(device),
                 image_view,
             ];
 
@@ -180,7 +180,7 @@ impl SwapChain {
             };
 
             let framebuffer = unsafe {
-                self.device
+                device
                     .get_device()
                     .create_framebuffer(&framebuffer_create_info, None)
                     .expect("Failed to create Framebuffer!")
@@ -243,18 +243,14 @@ impl SwapChain {
     }
 
     fn create_image_views(
-        device: Arc<Device>,
+        device: &Device,
         surface_format: vk::Format,
         images: &Vec<vk::Image>,
     ) -> Vec<vk::ImageView> {
         let mut swapchain_image_views = vec![];
 
         for &image in images.iter() {
-            swapchain_image_views.push(Image::create_image_view(
-                device.clone(),
-                image,
-                surface_format,
-            ));
+            swapchain_image_views.push(Image::create_image_view(device, image, surface_format));
         }
 
         swapchain_image_views
@@ -338,8 +334,8 @@ impl SwapChain {
         &mut self.in_flight_fences
     }
 
-    pub fn next_image(&mut self) {
-        self.in_flight_fences[self.current_frame].wait();
+    pub fn next_image(&mut self, device: &Device) {
+        self.in_flight_fences[self.current_frame].wait(device);
 
         self.current_image = unsafe {
             self.swapchain_loader
@@ -353,7 +349,7 @@ impl SwapChain {
                 .0
         };
 
-        self.in_flight_fences[self.current_frame].reset();
+        self.in_flight_fences[self.current_frame].reset(device);
     }
 
     pub fn get_current_image(&self) -> u32 {
@@ -372,7 +368,7 @@ impl SwapChain {
         self.render_finished_semaphores[self.current_frame].clone()
     }
 
-    pub fn present(&mut self, fence: Fence, wait_semaphores: &Vec<&Semaphore>) {
+    pub fn present(&mut self, device: &Device, fence: Fence, wait_semaphores: &Vec<&Semaphore>) {
         let mut wait_semaphores_raw = Vec::new();
         for wait_semaphore in wait_semaphores {
             wait_semaphores_raw.push(*wait_semaphore.get_semaphore());
@@ -392,11 +388,11 @@ impl SwapChain {
 
         unsafe {
             self.swapchain_loader
-                .queue_present(*self.device.get_present_queue(), &present_info)
+                .queue_present(*device.get_present_queue(), &present_info)
                 .expect("Failed to execute present queue!");
         }
 
-        self.in_flight_fences[self.current_frame].cleanup();
+        self.in_flight_fences[self.current_frame].cleanup(device);
         self.in_flight_fences[self.current_frame] = fence;
         self.current_frame = (self.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
@@ -405,32 +401,30 @@ impl SwapChain {
         &self.swapchain_images
     }
 
-    pub fn cleanup(&mut self) {
+    pub fn cleanup(&mut self, device: &Device) {
         for semaphore in &mut self.image_available_semaphores {
-            semaphore.cleanup();
+            semaphore.cleanup(device);
         }
 
         for semaphore in &mut self.render_finished_semaphores {
-            semaphore.cleanup();
+            semaphore.cleanup(device);
         }
 
         for fence in &mut self.in_flight_fences {
-            fence.cleanup();
+            fence.cleanup(device);
         }
 
         if let Some(depth_image) = &mut self.depth_image {
-            depth_image.cleanup();
+            depth_image.cleanup(device);
         }
 
         unsafe {
             for &imageview in self.swapchain_image_views.iter() {
-                self.device.get_device().destroy_image_view(imageview, None);
+                device.get_device().destroy_image_view(imageview, None);
             }
 
             for &framebuffer in self.frame_buffers.iter() {
-                self.device
-                    .get_device()
-                    .destroy_framebuffer(framebuffer, None);
+                device.get_device().destroy_framebuffer(framebuffer, None);
             }
 
             self.swapchain_loader

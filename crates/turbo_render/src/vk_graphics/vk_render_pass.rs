@@ -1,4 +1,4 @@
-use std::{ptr, sync::Arc};
+use std::ptr;
 
 use ash::vk;
 use bevy_ecs::prelude::*;
@@ -7,14 +7,13 @@ use crate::prelude::vk_device::Device;
 
 #[derive(Resource, Clone)]
 pub struct RenderPass {
-    device: Arc<Device>,
     render_pass: vk::RenderPass,
     msaa_samples: vk::SampleCountFlags,
 }
 
 impl RenderPass {
     pub fn new(
-        device: Arc<Device>,
+        device: &Device,
         color_format: vk::Format,
         depth_format: vk::Format,
         msaa_samples: vk::SampleCountFlags,
@@ -120,7 +119,6 @@ impl RenderPass {
         };
 
         RenderPass {
-            device,
             render_pass,
             msaa_samples,
         }
@@ -134,9 +132,9 @@ impl RenderPass {
         self.msaa_samples
     }
 
-    pub fn cleanup(&mut self) {
+    pub fn cleanup(&mut self, device: &Device) {
         unsafe {
-            self.device
+            device
                 .get_device()
                 .destroy_render_pass(self.render_pass, None);
         }

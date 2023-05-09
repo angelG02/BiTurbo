@@ -19,17 +19,14 @@ pub struct CommandQueue {
 
 impl CommandQueue {
     pub fn new(
-        device: Arc<Device>,
+        device: &Device,
         //allocator: Arc<Mutex<Allocator>>,
         queue: vk::Queue,
         command_pool: Arc<CommandPool>,
     ) -> Self {
         let mut command_buffers = Vec::new();
         for _ in 0..MAX_FRAMES_IN_FLIGHT {
-            command_buffers.push(CommandBuffer::new(
-                Arc::clone(&device),
-                Arc::clone(&command_pool),
-            ))
+            command_buffers.push(CommandBuffer::new(device, Arc::clone(&command_pool)))
         }
         Self {
             queue,
@@ -110,7 +107,7 @@ impl CommandQueue {
             p_signal_semaphores: p_signal_semaphores,
         }];
 
-        let fence = Fence::new(Arc::new(device.clone()), false);
+        let fence = Fence::new(device, false);
 
         unsafe {
             device

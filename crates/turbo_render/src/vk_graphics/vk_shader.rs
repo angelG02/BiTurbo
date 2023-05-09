@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use ash::*;
 
 use crate::prelude::vk_device::Device;
@@ -7,13 +5,12 @@ use turbo_core::util::get_binary_blob;
 
 #[derive(Clone)]
 pub struct ShaderModule {
-    device: Arc<Device>,
     shader_module: vk::ShaderModule,
     shader_stage_flags: vk::ShaderStageFlags,
 }
 
 impl ShaderModule {
-    pub fn new(device: Arc<Device>, name: &str) -> Self {
+    pub fn new(device: &Device, name: &str) -> Self {
         // TODO: use resource manager for shaders
         let shader_code = get_binary_blob(
             format!("C:/Projects/Hustle/bi_turbo_v0/sandbox/assets/builtin/shaders/bin/{name}.spv")
@@ -47,7 +44,6 @@ impl ShaderModule {
         };
 
         ShaderModule {
-            device,
             shader_module,
             shader_stage_flags,
         }
@@ -61,9 +57,9 @@ impl ShaderModule {
         &self.shader_stage_flags
     }
 
-    pub fn cleanup(&mut self) {
+    pub fn cleanup(&mut self, device: &Device) {
         unsafe {
-            self.device
+            device
                 .get_device()
                 .destroy_shader_module(self.shader_module, None);
         }

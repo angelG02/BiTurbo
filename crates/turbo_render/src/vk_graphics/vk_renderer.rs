@@ -31,14 +31,10 @@ impl Plugin for VulkanRendererPlugin {
         let (window_width, window_height) = window.get_glfw_window().get_framebuffer_size();
         let max_sample_count = device.get_max_sample_count();
 
-        let mut swapchain = SwapChain::new(
-            Arc::new(device.clone()),
-            window_width as u32,
-            window_height as u32,
-        );
+        let mut swapchain = SwapChain::new(&device, window_width as u32, window_height as u32);
 
         let mut render_image = Image::new(
-            Arc::new(device.clone()),
+            &device,
             swapchain.get_extent().width,
             swapchain.get_extent().height,
             1,
@@ -51,7 +47,7 @@ impl Plugin for VulkanRendererPlugin {
         );
 
         let render_pass = RenderPass::new(
-            Arc::new(device.clone()),
+            &device,
             *swapchain.get_color_format(),
             *swapchain.get_depth_format(),
             max_sample_count,
@@ -60,12 +56,12 @@ impl Plugin for VulkanRendererPlugin {
             vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
         );
 
-        swapchain.build_framebuffers(&render_pass, &mut render_image);
+        swapchain.build_framebuffers(&device, &render_pass, &mut render_image);
 
         let shaders = vec!["basic.vert", "basic.frag"];
 
         let pipeline = Pipeline::new(
-            Arc::new(device.clone()),
+            &device,
             swapchain.get_extent(),
             &render_pass,
             shaders,
@@ -73,9 +69,9 @@ impl Plugin for VulkanRendererPlugin {
             vk::TRUE,
         );
 
-        let command_pool = CommandPool::new(Arc::new(device.clone()));
+        let command_pool = CommandPool::new(&device);
         let mut command_queue = CommandQueue::new(
-            Arc::new(device.clone()),
+            &device,
             *device.get_graphics_queue(),
             Arc::new(command_pool.clone()),
         );
@@ -104,24 +100,24 @@ fn render_frame(world: &mut World) {
     let (mut device, mut swapchain, mut pipeline, mut render_pass, mut command_queue) =
         system_state.get_mut(world);
 
-    swapchain.next_image();
+    swapchain.next_image(&device);
 
     let mut command_buffer = command_queue.get_command_buffer(swapchain.get_current_frame());
-    command_buffer.reset();
+    command_buffer.reset(&device);
 
-    command_buffer.begin(vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
+    command_buffer.begin(&device, vk::CommandBufferUsageFlags::SIMULTANEOUS_USE);
 
-    command_buffer.set_viewport(swapchain.get_extent());
+    command_buffer.set_viewport(&device, swapchain.get_extent());
 
-    command_buffer.begin_render_pass(&render_pass, &swapchain);
+    command_buffer.begin_render_pass(&device, &render_pass, &swapchain);
 
-    command_buffer.bind_graphics_pipeline(Arc::new(pipeline.clone()));
+    command_buffer.bind_graphics_pipeline(&device, Arc::new(pipeline.clone()));
 
-    command_buffer.draw(3, 1, 0, 0);
+    command_buffer.draw(&device, 3, 1, 0, 0);
 
-    command_buffer.end_render_pass();
+    command_buffer.end_render_pass(&device);
 
-    command_buffer.end();
+    command_buffer.end(&device);
 
     let render_finished = swapchain.render_finished_semaphore();
     let image_available = swapchain.image_available_semaphore();
@@ -133,7 +129,9 @@ fn render_frame(world: &mut World) {
         Some(&vec![&render_finished]),
     );
 
-    swapchain.as_mut().present(fence, &vec![&render_finished]);
+    swapchain
+        .as_mut()
+        .present(&device, fence, &vec![&render_finished]);
 }
 
 fn cleanup(world: &mut World) {
@@ -157,10 +155,10 @@ fn cleanup(world: &mut World) {
 
     device.wait_idle();
 
-    command_pool.cleanup();
-    render_image.cleanup();
-    pipeline.as_mut().cleanup();
-    render_pass.as_mut().cleanup();
-    swapchain.as_mut().cleanup();
+    command_pool.cleanup(&device);
+    render_image.cleanup(&device);
+    pipeline.as_mut().cleanup(&device);
+    render_pass.as_mut().cleanup(&device);
+    swapchain.as_mut().cleanup(&device);
     device.as_mut().cleanup();
 }

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use ash::*;
 use bevy_ecs::prelude::*;
 
@@ -9,7 +7,6 @@ use crate::prelude::vk_shader::ShaderModule;
 
 #[derive(Resource, Clone)]
 pub struct Pipeline {
-    device: Arc<Device>,
     shader_modules: Vec<ShaderModule>,
     pipeline_layout: vk::PipelineLayout,
     pipeline: vk::Pipeline,
@@ -17,7 +14,7 @@ pub struct Pipeline {
 
 impl Pipeline {
     pub fn new(
-        device: Arc<Device>,
+        device: &Device,
         extent: &vk::Extent2D,
         render_pass: &RenderPass,
         shaders: Vec<&str>,
@@ -30,7 +27,7 @@ impl Pipeline {
         let mut shader_stages = Vec::new();
 
         for shader in shaders {
-            let shader_module = ShaderModule::new(device.clone(), shader);
+            let shader_module = ShaderModule::new(device, shader);
             shader_stages.push(vk::PipelineShaderStageCreateInfo {
                 s_type: vk::StructureType::PIPELINE_SHADER_STAGE_CREATE_INFO,
                 p_next: std::ptr::null(),
@@ -221,7 +218,6 @@ impl Pipeline {
         };
 
         Self {
-            device: Arc::clone(&device),
             shader_modules,
             pipeline_layout,
             pipeline: pipelines[0],
@@ -232,18 +228,16 @@ impl Pipeline {
         &self.pipeline
     }
 
-    pub fn cleanup(&mut self) {
+    pub fn cleanup(&mut self, device: &Device) {
         for shader_module in self.shader_modules.iter_mut() {
-            shader_module.cleanup();
+            shader_module.cleanup(device);
         }
         unsafe {
-            self.device
+            device
                 .get_device()
                 .destroy_pipeline_layout(self.pipeline_layout, None);
 
-            self.device
-                .get_device()
-                .destroy_pipeline(self.pipeline, None);
+            device.get_device().destroy_pipeline(self.pipeline, None);
         }
     }
 }

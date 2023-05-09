@@ -11,7 +11,6 @@ use crate::prelude::vk_swapchain::SwapChain;
 
 #[derive(Clone)]
 pub struct CommandBuffer {
-    device: Arc<Device>,
     //_allocator: Arc<Mutex<Allocator>>,
     _cmd_pool: Arc<CommandPool>,
     cmd_buffer: vk::CommandBuffer,
@@ -21,7 +20,7 @@ pub struct CommandBuffer {
 
 impl CommandBuffer {
     pub fn new(
-        device: Arc<Device>,
+        device: &Device,
         //allocator: Arc<Mutex<Allocator>>,
         command_pool: Arc<CommandPool>,
     ) -> Self {
@@ -41,7 +40,6 @@ impl CommandBuffer {
         };
 
         Self {
-            device,
             //_allocator: allocator,
             _cmd_pool: command_pool,
             cmd_buffer: command_buffers[0],
@@ -53,18 +51,18 @@ impl CommandBuffer {
         self.cmd_buffer
     }
 
-    pub fn reset(&mut self) {
+    pub fn reset(&mut self, device: &Device) {
         unsafe {
             self.pipeline = None;
 
-            self.device
+            device
                 .get_device()
                 .reset_command_buffer(self.cmd_buffer, vk::CommandBufferResetFlags::empty())
                 .expect("Failed to execute queue reset!");
         }
     }
 
-    pub fn begin(&self, flags: vk::CommandBufferUsageFlags) {
+    pub fn begin(&self, device: &Device, flags: vk::CommandBufferUsageFlags) {
         let command_buffer_begin_info = vk::CommandBufferBeginInfo {
             s_type: vk::StructureType::COMMAND_BUFFER_BEGIN_INFO,
             p_next: std::ptr::null(),
@@ -73,31 +71,31 @@ impl CommandBuffer {
         };
 
         unsafe {
-            self.device
+            device
                 .get_device()
                 .begin_command_buffer(self.cmd_buffer, &command_buffer_begin_info)
                 .expect("Failed to begin Command Buffer!");
         }
     }
 
-    pub fn end(&self) {
+    pub fn end(&self, device: &Device) {
         unsafe {
-            self.device
+            device
                 .get_device()
                 .end_command_buffer(self.cmd_buffer)
                 .expect("Failed to end Command Buffer!");
         }
     }
 
-    pub fn set_scissor(&self, scissor: vk::Rect2D) {
+    pub fn set_scissor(&self, scissor: vk::Rect2D, device: &Device) {
         unsafe {
-            self.device
+            device
                 .get_device()
                 .cmd_set_scissor(self.cmd_buffer, 0, &[scissor]);
         }
     }
 
-    pub fn set_viewport(&self, extent: &vk::Extent2D) {
+    pub fn set_viewport(&self, device: &Device, extent: &vk::Extent2D) {
         let viewports = [vk::Viewport {
             x: 0.0,
             y: 0.0,
@@ -113,17 +111,22 @@ impl CommandBuffer {
         }];
 
         unsafe {
-            self.device
+            device
                 .get_device()
                 .cmd_set_viewport(self.cmd_buffer, 0, &viewports);
 
-            self.device
+            device
                 .get_device()
                 .cmd_set_scissor(self.cmd_buffer, 0, &scissors);
         }
     }
 
-    pub fn begin_render_pass(&self, render_pass: &RenderPass, swapchain: &SwapChain) {
+    pub fn begin_render_pass(
+        &self,
+        device: &Device,
+        render_pass: &RenderPass,
+        swapchain: &SwapChain,
+    ) {
         let clear_values = [
             vk::ClearValue {
                 color: vk::ClearColorValue {
@@ -152,7 +155,7 @@ impl CommandBuffer {
         };
 
         unsafe {
-            self.device.get_device().cmd_begin_render_pass(
+            device.get_device().cmd_begin_render_pass(
                 self.cmd_buffer,
                 &render_pass_begin_info,
                 vk::SubpassContents::INLINE,
@@ -160,19 +163,17 @@ impl CommandBuffer {
         }
     }
 
-    pub fn end_render_pass(&self) {
+    pub fn end_render_pass(&self, device: &Device) {
         unsafe {
-            self.device
-                .get_device()
-                .cmd_end_render_pass(self.cmd_buffer);
+            device.get_device().cmd_end_render_pass(self.cmd_buffer);
         }
     }
 
-    pub fn bind_graphics_pipeline(&mut self, pipeline: Arc<Pipeline>) {
+    pub fn bind_graphics_pipeline(&mut self, device: &Device, pipeline: Arc<Pipeline>) {
         self.pipeline = Some(pipeline.clone());
 
         unsafe {
-            self.device.get_device().cmd_bind_pipeline(
+            device.get_device().cmd_bind_pipeline(
                 self.cmd_buffer,
                 vk::PipelineBindPoint::GRAPHICS,
                 *pipeline.get_pipeline(),
@@ -182,13 +183,14 @@ impl CommandBuffer {
 
     pub fn draw(
         &self,
+        device: &Device,
         vertex_count: u32,
         instance_count: u32,
         first_vertex: u32,
         first_instance: u32,
     ) {
         unsafe {
-            self.device.get_device().cmd_draw(
+            device.get_device().cmd_draw(
                 self.cmd_buffer,
                 vertex_count,
                 instance_count,

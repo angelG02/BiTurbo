@@ -9,7 +9,6 @@ use crate::prelude::vk_device::Device;
 use gpu_allocator::{vulkan::*, *};
 
 pub struct Buffer {
-    device: Arc<Device>,
     allocator: Arc<Mutex<Allocator>>,
     buffer: vk::Buffer,
     allocation: Option<Allocation>,
@@ -21,7 +20,7 @@ pub struct Buffer {
 impl Buffer {
     pub fn new(
         name: &'static str,
-        device: Arc<Device>,
+        device: &Device,
         allocator: Arc<Mutex<Allocator>>,
         size: vk::DeviceSize,
         usage: vk::BufferUsageFlags,
@@ -80,7 +79,6 @@ impl Buffer {
         }
 
         let mut buffer = Buffer {
-            device,
             allocator,
             buffer,
             allocation: Some(allocation),
@@ -88,7 +86,7 @@ impl Buffer {
             name: String::from(name),
         };
 
-        buffer.set_debug_name(name);
+        buffer.set_debug_name(device, name);
         buffer
     }
 
@@ -129,7 +127,7 @@ impl Buffer {
         self.size
     }
 
-    pub fn get_device_address(&self) -> vk::DeviceAddress {
+    pub fn get_device_address(&self, device: &Device) -> vk::DeviceAddress {
         let info = vk::BufferDeviceAddressInfo {
             s_type: vk::StructureType::BUFFER_DEVICE_ADDRESS_INFO,
             buffer: self.buffer,
@@ -137,13 +135,13 @@ impl Buffer {
         };
 
         unsafe {
-            self.device
+            device
                 .get_buffer_device_address_loader()
                 .get_buffer_device_address(&info)
         }
     }
 
-    pub fn set_debug_name(&mut self, name: &'static str) {
+    pub fn set_debug_name(&mut self, device: &Device, name: &'static str) {
         let handle: u64 = unsafe { std::mem::transmute(self.buffer) };
 
         let info = vk::DebugUtilsObjectNameInfoEXT::builder()
@@ -153,16 +151,16 @@ impl Buffer {
             .build();
 
         unsafe {
-            self.device
+            device
                 .get_debug_utils_loader()
-                .set_debug_utils_object_name(self.device.get_device().handle(), &info)
+                .set_debug_utils_object_name(device.get_device().handle(), &info)
                 .expect("Failed to set debug name.");
         }
 
         self.name = String::from(name);
     }
 
-    pub fn cleanup(&mut self) {
+    pub fn cleanup(&mut self, device: &Device) {
         unsafe {
             if let Some(allocation) = self.allocation.take() {
                 self.allocator
@@ -173,7 +171,7 @@ impl Buffer {
                     .unwrap();
             }
 
-            self.device.get_device().destroy_buffer(self.buffer, None);
+            device.get_device().destroy_buffer(self.buffer, None);
         }
     }
 }

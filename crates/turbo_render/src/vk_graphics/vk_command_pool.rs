@@ -1,4 +1,4 @@
-use std::{ptr, sync::Arc};
+use std::ptr;
 
 use ash::vk;
 use bevy_ecs::prelude::*;
@@ -7,12 +7,11 @@ use crate::prelude::vk_device::Device;
 
 #[derive(Resource, Clone)]
 pub struct CommandPool {
-    device: Arc<Device>,
     cmd_pool: vk::CommandPool,
 }
 
 impl CommandPool {
-    pub fn new(device: Arc<Device>) -> Self {
+    pub fn new(device: &Device) -> Self {
         let command_pool_create_info = vk::CommandPoolCreateInfo {
             s_type: vk::StructureType::COMMAND_POOL_CREATE_INFO,
             p_next: ptr::null(),
@@ -27,16 +26,16 @@ impl CommandPool {
                 .expect("Failed to create Command Pool.")
         };
 
-        CommandPool { device, cmd_pool }
+        CommandPool { cmd_pool }
     }
 
     pub fn get_command_pool(&self) -> vk::CommandPool {
         self.cmd_pool
     }
 
-    pub fn cleanup(&mut self) {
+    pub fn cleanup(&mut self, device: &Device) {
         unsafe {
-            self.device
+            device
                 .get_device()
                 .destroy_command_pool(self.cmd_pool, None);
         }

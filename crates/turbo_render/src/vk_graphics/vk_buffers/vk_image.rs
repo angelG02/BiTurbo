@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use ash::vk;
 use bevy_ecs::prelude::*;
 
@@ -8,7 +6,6 @@ use crate::prelude::vk_device::Device;
 
 #[derive(Resource, Clone)]
 pub struct Image {
-    device: Arc<Device>,
     image: vk::Image,
     image_view: Option<vk::ImageView>,
     memory: vk::DeviceMemory,
@@ -20,7 +17,7 @@ pub struct Image {
 
 impl Image {
     pub fn new(
-        device: Arc<Device>,
+        device: &Device,
         width: u32,
         height: u32,
         mip_levels: u32,
@@ -91,7 +88,6 @@ impl Image {
         }
 
         Image {
-            device: device,
             image: texture_image,
             image_view: None,
             memory: texture_image_memory,
@@ -103,7 +99,7 @@ impl Image {
     }
 
     pub fn create_image_view(
-        device: Arc<Device>,
+        device: &Device,
         image: vk::Image,
         format: vk::Format,
     ) -> vk::ImageView {
@@ -127,7 +123,7 @@ impl Image {
                 a: vk::ComponentSwizzle::IDENTITY,
             },
             subresource_range: vk::ImageSubresourceRange {
-                aspect_mask: aspect_mask,
+                aspect_mask,
                 base_mip_level: 0,
                 level_count: 1,
                 base_array_layer: 0,
@@ -148,15 +144,11 @@ impl Image {
         self.image
     }
 
-    pub fn get_image_view(&mut self) -> vk::ImageView {
+    pub fn get_image_view(&mut self, device: &Device) -> vk::ImageView {
         match self.image_view {
             Some(image_view) => image_view,
             None => {
-                self.image_view = Some(Self::create_image_view(
-                    self.device.clone(),
-                    self.image,
-                    self.format,
-                ));
+                self.image_view = Some(Self::create_image_view(device, self.image, self.format));
                 self.image_view.unwrap()
             }
         }
@@ -178,17 +170,15 @@ impl Image {
         self.sample_count
     }
 
-    pub fn cleanup(&mut self) {
+    pub fn cleanup(&mut self, device: &Device) {
         unsafe {
-            self.device.get_device().free_memory(self.memory, None);
+            device.get_device().free_memory(self.memory, None);
 
             if let Some(image_view) = self.image_view {
-                self.device
-                    .get_device()
-                    .destroy_image_view(image_view, None);
+                device.get_device().destroy_image_view(image_view, None);
             }
 
-            self.device.get_device().destroy_image(self.image, None);
+            device.get_device().destroy_image(self.image, None);
         }
     }
 }

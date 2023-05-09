@@ -1,4 +1,4 @@
-use std::{ptr, sync::Arc};
+use std::ptr;
 
 use ash::vk;
 
@@ -6,12 +6,11 @@ use crate::prelude::vk_device::Device;
 
 #[derive(Clone)]
 pub struct Fence {
-    device: Arc<Device>,
     fence: vk::Fence,
 }
 
 impl Fence {
-    pub fn new(device: Arc<Device>, signaled: bool) -> Self {
+    pub fn new(device: &Device, signaled: bool) -> Self {
         let create_flags: vk::FenceCreateFlags = if signaled {
             vk::FenceCreateFlags::SIGNALED
         } else {
@@ -31,43 +30,43 @@ impl Fence {
                 .expect("Failed to create Semaphore Object.")
         };
 
-        Fence { device, fence }
+        Fence { fence }
     }
 
     pub fn get_fence(&self) -> vk::Fence {
         self.fence
     }
 
-    pub fn is_completed(&self) -> bool {
+    pub fn is_completed(&self, device: &Device) -> bool {
         unsafe {
-            self.device
+            device
                 .get_device()
                 .get_fence_status(self.fence)
                 .expect("Failed to get Fence status.")
         }
     }
 
-    pub fn wait(&self) {
+    pub fn wait(&self, device: &Device) {
         unsafe {
-            self.device
+            device
                 .get_device()
                 .wait_for_fences(&[self.fence], true, std::u64::MAX)
                 .expect("Failed to wait for Fence.");
         }
     }
 
-    pub fn reset(&self) {
+    pub fn reset(&self, device: &Device) {
         unsafe {
-            self.device
+            device
                 .get_device()
                 .reset_fences(&[self.fence])
                 .expect("Failed to reset Fence.");
         }
     }
 
-    pub fn cleanup(&mut self) {
+    pub fn cleanup(&mut self, device: &Device) {
         unsafe {
-            self.device.get_device().destroy_fence(self.fence, None);
+            device.get_device().destroy_fence(self.fence, None);
         }
     }
 }
