@@ -1,8 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use ash::vk;
-// use bevy_ecs::prelude::*;
-use gpu_allocator::vulkan::*;
+//use gpu_allocator::vulkan::*;
 
 use crate::prelude::vk_command_pool::CommandPool;
 use crate::prelude::vk_device::Device;
@@ -10,10 +9,10 @@ use crate::prelude::vk_pipeline::Pipeline;
 use crate::prelude::vk_render_pass::RenderPass;
 use crate::prelude::vk_swapchain::SwapChain;
 
+#[derive(Clone)]
 pub struct CommandBuffer {
     device: Arc<Device>,
-    _allocator: Arc<Mutex<Allocator>>,
-
+    //_allocator: Arc<Mutex<Allocator>>,
     _cmd_pool: Arc<CommandPool>,
     cmd_buffer: vk::CommandBuffer,
 
@@ -23,7 +22,7 @@ pub struct CommandBuffer {
 impl CommandBuffer {
     pub fn new(
         device: Arc<Device>,
-        allocator: Arc<Mutex<Allocator>>,
+        //allocator: Arc<Mutex<Allocator>>,
         command_pool: Arc<CommandPool>,
     ) -> Self {
         let command_buffer_allocate_info = vk::CommandBufferAllocateInfo {
@@ -43,7 +42,7 @@ impl CommandBuffer {
 
         Self {
             device,
-            _allocator: allocator,
+            //_allocator: allocator,
             _cmd_pool: command_pool,
             cmd_buffer: command_buffers[0],
             pipeline: None,

@@ -334,6 +334,10 @@ impl SwapChain {
         self.frame_buffers.len()
     }
 
+    pub fn get_inflight_fences(&mut self) -> &mut [Fence] {
+        &mut self.in_flight_fences
+    }
+
     pub fn next_image(&mut self) {
         self.in_flight_fences[self.current_frame].wait();
 
@@ -356,15 +360,19 @@ impl SwapChain {
         self.current_image
     }
 
-    pub fn image_available_semaphore(&self) -> &Semaphore {
-        &self.image_available_semaphores[self.current_frame]
+    pub fn get_current_frame(&self) -> usize {
+        self.current_frame
     }
 
-    pub fn render_finished_semaphore(&self) -> &Semaphore {
-        &self.render_finished_semaphores[self.current_frame]
+    pub fn image_available_semaphore(&self) -> Semaphore {
+        self.image_available_semaphores[self.current_frame].clone()
     }
 
-    pub fn present(&mut self, fence: &Fence, wait_semaphores: &Vec<&Semaphore>) {
+    pub fn render_finished_semaphore(&self) -> Semaphore {
+        self.render_finished_semaphores[self.current_frame].clone()
+    }
+
+    pub fn present(&mut self, fence: Fence, wait_semaphores: &Vec<&Semaphore>) {
         let mut wait_semaphores_raw = Vec::new();
         for wait_semaphore in wait_semaphores {
             wait_semaphores_raw.push(*wait_semaphore.get_semaphore());
@@ -388,7 +396,8 @@ impl SwapChain {
                 .expect("Failed to execute present queue!");
         }
 
-        self.in_flight_fences[self.current_frame] = fence.clone();
+        self.in_flight_fences[self.current_frame].cleanup();
+        self.in_flight_fences[self.current_frame] = fence;
         self.current_frame = (self.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 

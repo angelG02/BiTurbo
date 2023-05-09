@@ -89,7 +89,8 @@ impl App {
         while self.running {
             // Calculate frame time (delta time)
             let new_time = std::time::Instant::now();
-            let frame_time = (new_time - current_time).as_nanos();
+            let frame_time = (new_time - current_time).as_millis();
+            println!("{frame_time}ms");
             let _delta_time = frame_time as f32 * 0.000000001;
             current_time = new_time;
 

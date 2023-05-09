@@ -677,4 +677,12 @@ impl Device {
                 .get_physical_device_memory_properties(self.physical_device)
         }
     }
+
+    pub fn wait_idle(&self) {
+        unsafe {
+            self.device
+                .device_wait_idle()
+                .expect("Failed to wait device idle.")
+        };
+    }
 }
