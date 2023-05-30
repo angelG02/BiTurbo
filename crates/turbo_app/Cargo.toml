@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 turbo_core = { path = "../turbo_core" }
 bevy_ecs = "0.10.1"
+assets_manager = {path = "../turbo_assets", features = ["hot-reloading"]}
 
 ###############################################################################
 #                               BUILD SETTINGS

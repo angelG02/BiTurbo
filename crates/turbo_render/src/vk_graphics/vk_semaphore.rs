@@ -4,6 +4,7 @@ use ash::vk;
 
 use crate::prelude::vk_device::Device;
 
+#[derive(Clone)]
 pub struct Semaphore {
     semaphore: vk::Semaphore,
 }

@@ -23,5 +23,9 @@ pub mod render {
     pub use turbo_render::*;
 }
 
+pub mod turbo_assets {
+    pub use assets_manager::*;
+}
+
 /// `use bi_turbo::prelude::*;` to import common components, bundles, and plugins.
 pub mod prelude;
