@@ -23,7 +23,7 @@ pub mod render {
     pub use turbo_render::*;
 }
 
-pub mod turbo_assets {
+pub mod assets {
     pub use assets_manager::*;
 }
 
