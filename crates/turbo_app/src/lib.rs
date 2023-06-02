@@ -14,12 +14,19 @@ pub mod prelude {
 
     impl Plugin for AssetsManagerPlugin {
         fn build(&self, app: &mut App) {
-            let asset_path: String =
-                env::var("ASSETS_PATH").expect("Asset path environment variable not set!");
-            let cache = AssetCache::new(asset_path).expect("Luca is retarded");
+            let asset_path = env::var("ASSETS_PATH");
+            if asset_path.is_ok() {
+                let cache = AssetCache::new(asset_path.unwrap()).expect("Luca is retarded");
 
-            app.insert_resource(cache);
-            app.add_systems(OnMainUpdate, (hot_reload, || {}));
+                app.insert_resource(cache);
+                app.add_systems(OnMainUpdate, (hot_reload, || {}));
+            } else {
+                let cache = AssetCache::new("C:\\Projects\\Hustle\\bi_turbo_v0\\sandbox\\assets")
+                    .expect("Luca is retarded");
+
+                app.insert_resource(cache);
+                app.add_systems(OnMainUpdate, (hot_reload, || {}));
+            }
         }
     }
 

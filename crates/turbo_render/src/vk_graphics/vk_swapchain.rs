@@ -6,6 +6,8 @@ use crate::prelude::vk_fence::Fence;
 use crate::prelude::vk_render_pass::RenderPass;
 use crate::prelude::vk_semaphore::Semaphore;
 
+use turbo_core::trace::warn;
+
 use bevy_ecs::prelude::*;
 
 pub const MAX_FRAMES_IN_FLIGHT: usize = 3;
@@ -17,6 +19,9 @@ pub struct SwapChain {
     color_format: vk::Format,
     depth_format: vk::Format,
     swapchain_extent: vk::Extent2D,
+
+    render_pass: RenderPass,
+    render_image: Image,
 
     depth_image: Option<Image>,
     frame_buffers: Vec<vk::Framebuffer>,
@@ -30,6 +35,8 @@ pub struct SwapChain {
 
     current_frame: usize,
     current_image: u32,
+
+    out_of_date: bool,
 }
 
 impl SwapChain {
@@ -83,6 +90,11 @@ impl SwapChain {
             present_mode,
             clipped: vk::TRUE,
             old_swapchain: vk::SwapchainKHR::null(),
+            // old_swapchain: if let Some(old_swapchain) = old_swapchain {
+            //     old_swapchain.get_swapchain().clone()
+            // } else {
+            //     vk::SwapchainKHR::null()
+            // },
         };
 
         let swapchain_loader =
@@ -117,6 +129,29 @@ impl SwapChain {
             device.get_physical_device(),
         );
 
+        let render_pass = RenderPass::new(
+            &device,
+            surface_format.format,
+            depth_format,
+            device.get_max_sample_count(),
+            vk::AttachmentLoadOp::CLEAR,
+            vk::ImageLayout::UNDEFINED,
+            vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+        );
+
+        let render_image = Image::new(
+            &device,
+            width,
+            height,
+            1,
+            surface_format.format,
+            device.get_max_sample_count(),
+            vk::ImageTiling::OPTIMAL,
+            vk::ImageUsageFlags::TRANSIENT_ATTACHMENT | vk::ImageUsageFlags::COLOR_ATTACHMENT,
+            vk::MemoryPropertyFlags::DEVICE_LOCAL,
+            &device.get_physical_device_mem_properties(),
+        );
+
         Self {
             swapchain_loader,
             swapchain,
@@ -132,15 +167,13 @@ impl SwapChain {
             in_flight_fences: in_flight_fences.try_into().unwrap_or_else(|_| panic!("")),
             current_frame: 0,
             current_image: 0,
+            out_of_date: false,
+            render_pass,
+            render_image,
         }
     }
 
-    pub fn build_framebuffers(
-        &mut self,
-        device: &Device,
-        render_pass: &RenderPass,
-        render_image: &mut Image,
-    ) {
+    pub fn build_framebuffers(&mut self, device: &Device) {
         assert_eq!(
             self.frame_buffers.len(),
             0,
@@ -153,7 +186,7 @@ impl SwapChain {
             self.swapchain_extent.height,
             1,
             self.depth_format,
-            render_image.sample_count(),
+            self.render_image.sample_count(),
             vk::ImageTiling::OPTIMAL,
             vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT,
             vk::MemoryPropertyFlags::DEVICE_LOCAL,
@@ -162,7 +195,7 @@ impl SwapChain {
 
         for &image_view in self.swapchain_image_views.iter() {
             let attachments = [
-                render_image.get_image_view(device),
+                self.render_image.get_image_view(device),
                 depth_img.get_image_view(device),
                 image_view,
             ];
@@ -171,7 +204,7 @@ impl SwapChain {
                 s_type: vk::StructureType::FRAMEBUFFER_CREATE_INFO,
                 p_next: std::ptr::null(),
                 flags: vk::FramebufferCreateFlags::empty(),
-                render_pass: render_pass.get_render_pass(),
+                render_pass: self.render_pass.get_render_pass(),
                 attachment_count: attachments.len() as u32,
                 p_attachments: attachments.as_ptr(),
                 width: self.swapchain_extent.width,
@@ -337,19 +370,21 @@ impl SwapChain {
     pub fn next_image(&mut self, device: &Device) {
         self.in_flight_fences[self.current_frame].wait(device);
 
-        self.current_image = unsafe {
-            self.swapchain_loader
-                .acquire_next_image(
-                    self.swapchain,
-                    std::u64::MAX,
-                    *self.image_available_semaphores[self.current_frame].get_semaphore(),
-                    vk::Fence::null(),
-                )
-                .expect("Failed to acquire next image!")
-                .0
+        let result = unsafe {
+            self.swapchain_loader.acquire_next_image(
+                self.swapchain,
+                std::u64::MAX,
+                *self.image_available_semaphores[self.current_frame].get_semaphore(),
+                vk::Fence::null(),
+            )
         };
-
-        self.in_flight_fences[self.current_frame].reset(device);
+        if let Ok(result) = result {
+            self.current_image = result.0;
+            self.in_flight_fences[self.current_frame].reset(device);
+        } else {
+            warn!("Out of date!");
+            self.out_of_date = true;
+        }
     }
 
     pub fn get_current_image(&self) -> u32 {
@@ -401,6 +436,25 @@ impl SwapChain {
         &self.swapchain_images
     }
 
+    pub fn get_render_pass(&self) -> &RenderPass {
+        &self.render_pass
+    }
+
+    pub fn get_render_image(&self) -> &Image {
+        &self.render_image
+    }
+
+    pub fn is_out_of_date(&self) -> bool {
+        self.out_of_date
+    }
+
+    pub fn recreate_swapchain(device: &Device, width: u32, height: u32) -> SwapChain {
+        let mut new_swapchain = SwapChain::new(device, width, height);
+
+        new_swapchain.build_framebuffers(&device);
+        new_swapchain
+    }
+
     pub fn cleanup(&mut self, device: &Device) {
         for semaphore in &mut self.image_available_semaphores {
             semaphore.cleanup(device);
@@ -417,6 +471,9 @@ impl SwapChain {
         if let Some(depth_image) = &mut self.depth_image {
             depth_image.cleanup(device);
         }
+
+        self.render_pass.cleanup(device);
+        self.render_image.cleanup(device);
 
         unsafe {
             for &imageview in self.swapchain_image_views.iter() {

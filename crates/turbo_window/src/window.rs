@@ -140,9 +140,18 @@ impl Window {
         &self.window
     }
 
+    /// Returns a reference to the underlying GLFW window object.
+    pub fn get_glfw_window_mut(&mut self) -> &mut GLFWWindow {
+        &mut self.window
+    }
+
     /// Returns whether the user has requested that the window be closed.
     pub fn should_close(&self) -> bool {
         self.window.should_close()
+    }
+
+    pub fn get_extent(&self) -> (u32, u32) {
+        (self.width, self.height)
     }
 }
 

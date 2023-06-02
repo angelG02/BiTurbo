@@ -13,7 +13,13 @@ pub struct OnEvent;
 pub struct OnMainUpdate;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnMainBeginFrame;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnMainRender;
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OnMainEndFrame;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OnShutdown;
@@ -66,9 +72,17 @@ impl App {
         let update = Schedule::new();
         schedules.insert(OnMainUpdate, update);
 
-        // Update schedule
+        // Begin Frame schedule
+        let begin_frame = Schedule::new();
+        schedules.insert(OnMainBeginFrame, begin_frame);
+
+        // Render schedule
         let render = Schedule::new();
         schedules.insert(OnMainRender, render);
+
+        // End Frame schedule
+        let end_frame = Schedule::new();
+        schedules.insert(OnMainEndFrame, end_frame);
 
         // Program shutdown schedule that will run when the program is closed
         let on_shutdown = Schedule::new();
@@ -98,7 +112,10 @@ impl App {
 
             self.world.run_schedule(OnMainUpdate);
 
+            // Note (@a40): should we split the frame into begin, render and end?
+            //self.world.run_schedule(OnMainBeginFrame);
             self.world.run_schedule(OnMainRender);
+            //self.world.run_schedule(OnMainEndFrame);
         }
 
         self.world.run_schedule(OnShutdown);

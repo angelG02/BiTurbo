@@ -6,7 +6,6 @@ use ash::vk;
 use crate::prelude::vk_command_pool::CommandPool;
 use crate::prelude::vk_device::Device;
 use crate::prelude::vk_pipeline::Pipeline;
-use crate::prelude::vk_render_pass::RenderPass;
 use crate::prelude::vk_swapchain::SwapChain;
 
 #[derive(Clone)]
@@ -119,12 +118,7 @@ impl CommandBuffer {
         }
     }
 
-    pub fn begin_render_pass(
-        &self,
-        device: &Device,
-        render_pass: &RenderPass,
-        swapchain: &SwapChain,
-    ) {
+    pub fn begin_render_pass(&self, device: &Device, swapchain: &SwapChain) {
         let clear_values = [
             vk::ClearValue {
                 color: vk::ClearColorValue {
@@ -142,7 +136,7 @@ impl CommandBuffer {
         let render_pass_begin_info = vk::RenderPassBeginInfo {
             s_type: vk::StructureType::RENDER_PASS_BEGIN_INFO,
             p_next: std::ptr::null(),
-            render_pass: render_pass.get_render_pass(),
+            render_pass: swapchain.get_render_pass().get_render_pass(),
             framebuffer: *swapchain.get_current_framebuffer(),
             render_area: vk::Rect2D {
                 offset: vk::Offset2D { x: 0, y: 0 },
