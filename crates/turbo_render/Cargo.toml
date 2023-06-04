@@ -10,6 +10,7 @@ turbo_app = { path = "../turbo_app" }
 turbo_core = { path = "../turbo_core" }
 turbo_window = { path = "../turbo_window" }
 turbo_ecs = { path = "../turbo_ecs" }
+assets_manager = {path = "../external/assets_manager"}
 
 # Other
 ash       = "0.37.2+1.3.238"
@@ -24,6 +25,7 @@ imgui = "0.11.0"
 byte-unit = "4.0.19"
 glfw = "0.51.0"
 bevy_ecs = "0.10.1"
+shaderc = "0.8.2"
 
 [dependencies.bitflags]
 version = ">= 1.0.4"

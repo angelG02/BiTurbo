@@ -1,7 +1,6 @@
 use ash::*;
 
 use crate::prelude::vk_device::Device;
-use turbo_core::util::get_binary_blob;
 
 pub struct ShaderModule {
     shader_module: vk::ShaderModule,
@@ -9,13 +8,7 @@ pub struct ShaderModule {
 }
 
 impl ShaderModule {
-    pub fn new(device: &Device, name: &str) -> Self {
-        // TODO: use resource manager for shaders
-        let shader_code = get_binary_blob(
-            format!("C:/Projects/Hustle/bi_turbo_v0/sandbox/assets/builtin/shaders/bin/{name}.spv")
-                .as_str(),
-        );
-
+    pub fn new(device: &Device, shader_code: &Vec<u8>, variant: &str) -> Self {
         let create_info = vk::ShaderModuleCreateInfo {
             s_type: vk::StructureType::SHADER_MODULE_CREATE_INFO,
             p_next: std::ptr::null(),
@@ -31,14 +24,13 @@ impl ShaderModule {
                 .expect("Failed to create Shader Module!")
         };
 
-        let shader_stage_flags = match std::path::Path::new(&name).extension()
-                                                        .expect("Failed to get shader type from file extension").to_str().unwrap() {
-            "vert" | "vertex" | "vs" => vk::ShaderStageFlags::VERTEX,
-            "frag" | "fragment" | "fs" => vk::ShaderStageFlags::FRAGMENT,
-            "tesc" | "tessellation_control" | "tcs" => vk::ShaderStageFlags::TESSELLATION_CONTROL,
-            "tese" | "tessellation_evaluation" | "tes" => vk::ShaderStageFlags::TESSELLATION_EVALUATION,
-            "geom" | "geometry" | "gs" => vk::ShaderStageFlags::GEOMETRY,
-            "comp" | "compute" | "cs" => vk::ShaderStageFlags::COMPUTE,
+        let shader_stage_flags = match variant {
+            "vert" | "Vertex" | "vs" => vk::ShaderStageFlags::VERTEX,
+            "frag" | "Fragment" | "fs" => vk::ShaderStageFlags::FRAGMENT,
+            "tesc" | "Tessellation_Control" | "tcs" => vk::ShaderStageFlags::TESSELLATION_CONTROL,
+            "tese" | "Tessellation_Evaluation" | "tes" => vk::ShaderStageFlags::TESSELLATION_EVALUATION,
+            "geom" | "Geometry" | "gs" => vk::ShaderStageFlags::GEOMETRY,
+            "comp" | "Compute" | "cs" => vk::ShaderStageFlags::COMPUTE,
             extension => panic!("Failed to get shader type from file extension, unable to recognize \"{extension}\".")
         };
 

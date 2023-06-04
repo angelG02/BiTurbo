@@ -1,6 +1,6 @@
 use ash::{self, vk};
 use bevy_ecs::schedule::IntoSystemConfigs;
-use bevy_ecs::system::{ResMut, SystemState};
+use bevy_ecs::system::{Res, ResMut, SystemState};
 use bevy_ecs::world::World;
 
 use turbo_core::event::Event;
@@ -14,6 +14,9 @@ use crate::prelude::vk_swapchain::SwapChain;
 
 use turbo_app::prelude::{OnMainRender, OnShutdown, Plugin};
 use turbo_window::window::Window;
+
+use crate::shader::Shader;
+use assets_manager::AssetCache;
 
 pub struct VulkanRendererPlugin;
 
@@ -34,13 +37,21 @@ impl Plugin for VulkanRendererPlugin {
 
         swapchain.build_framebuffers(&device);
 
-        let shaders = vec!["basic.vert", "basic.frag"];
+        let cache = app.world.get_resource::<AssetCache>().unwrap();
+
+        let vert_shader = cache
+            .load::<Shader>("builtin/shaders/src/basicVert")
+            .expect("Could not load basic vertex shader!");
+
+        let frag_shader = cache
+            .load::<Shader>("builtin/shaders/src/basicFrag")
+            .expect("Could not load basic vertex shader!");
 
         let pipeline = Pipeline::new(
             &device,
             swapchain.get_extent(),
             &swapchain.get_render_pass(),
-            shaders,
+            vec![vert_shader, frag_shader],
             vk::CullModeFlags::BACK,
             vk::TRUE,
         );
@@ -53,7 +64,10 @@ impl Plugin for VulkanRendererPlugin {
             .insert_resource(pipeline)
             .insert_resource(command_pool)
             .insert_resource(command_queue)
-            .add_systems(OnMainRender, (recreate_swapchain, render_frame).chain())
+            .add_systems(
+                OnMainRender,
+                (recreate_swapchain, recreate_pipeline, render_frame).chain(),
+            )
             .add_systems(OnShutdown, (cleanup, || {}));
     }
 }
@@ -133,6 +147,48 @@ fn recreate_swapchain(world: &mut World) {
     let new_swapchain = SwapChain::recreate_swapchain(&device, extent.0, extent.1);
 
     world.insert_resource(new_swapchain);
+}
+
+fn recreate_pipeline(world: &mut World) {
+    let mut system_state: SystemState<(
+        Res<Device>,
+        Res<SwapChain>,
+        Res<AssetCache>,
+        ResMut<Pipeline>,
+        Option<ResMut<Event>>,
+    )> = SystemState::new(world);
+
+    let (device, swapchain, cache, mut pipeline, event) = system_state.get_mut(world);
+
+    if let Some(mut event) = event {
+        if let Event::KeyPressed(glfw::Key::R, 0) = *event {
+            *event = Event::Handled;
+        } else {
+            return;
+        }
+    } else {
+        return;
+    }
+    device.wait_idle();
+    pipeline.cleanup(&device);
+    let vert_shader = cache
+        .get_cached::<Shader>("builtin/shaders/src/basicVert")
+        .expect("Could not load basic vertex shader!");
+
+    let frag_shader = cache
+        .get_cached::<Shader>("builtin/shaders/src/basicFrag")
+        .expect("Could not load basic vertex shader!");
+
+    let pipeline = Pipeline::new(
+        &device,
+        swapchain.get_extent(),
+        &swapchain.get_render_pass(),
+        vec![vert_shader, frag_shader],
+        vk::CullModeFlags::BACK,
+        vk::TRUE,
+    );
+
+    world.insert_resource::<Pipeline>(pipeline);
 }
 
 fn cleanup(world: &mut World) {

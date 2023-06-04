@@ -4,6 +4,8 @@ use bevy_ecs::prelude::*;
 use crate::prelude::vk_device::Device;
 use crate::prelude::vk_render_pass::RenderPass;
 use crate::prelude::vk_shader::ShaderModule;
+use crate::shader::Shader;
+use assets_manager::Handle;
 
 #[derive(Resource)]
 pub struct Pipeline {
@@ -17,7 +19,7 @@ impl Pipeline {
         device: &Device,
         extent: &vk::Extent2D,
         render_pass: &RenderPass,
-        shaders: Vec<&str>,
+        shaders: Vec<Handle<Shader>>,
         cull_mode: vk::CullModeFlags,
         depth_test_enable: vk::Bool32,
     ) -> Self {
@@ -27,7 +29,8 @@ impl Pipeline {
         let mut shader_stages = Vec::new();
 
         for shader in shaders {
-            let shader_module = ShaderModule::new(device, shader);
+            let shader = shader.read();
+            let shader_module = ShaderModule::new(device, &shader.byte_code, &shader.variant);
             shader_stages.push(vk::PipelineShaderStageCreateInfo {
                 s_type: vk::StructureType::PIPELINE_SHADER_STAGE_CREATE_INFO,
                 p_next: std::ptr::null(),

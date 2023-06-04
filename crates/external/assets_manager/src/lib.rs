@@ -215,12 +215,16 @@ pub struct AssetsManagerPlugin;
 use bevy_ecs::prelude::*;
 use std::env;
 use turbo_app::prelude::*;
+use turbo_core::trace::info;
 
 impl Plugin for AssetsManagerPlugin {
     fn build(&self, app: &mut App) {
         let asset_path = env::var("ASSETS_PATH");
         if asset_path.is_ok() {
             let cache = AssetCache::new(asset_path.unwrap()).expect("Luca is retarded");
+
+            let source = cache.raw_source();
+            info!("Created asset cache with directory: {:?}", source);
 
             app.insert_resource(cache);
             app.add_systems(OnMainUpdate, (hot_reload, || {}));
