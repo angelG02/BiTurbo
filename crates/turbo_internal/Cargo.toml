@@ -12,7 +12,7 @@ turbo_core = { path = "../turbo_core" }
 turbo_window = { path = "../turbo_window" }
 turbo_ecs = { path = "../turbo_ecs" }
 turbo_render = { path = "../turbo_render" }
-assets_manager = {path = "../turbo_assets", features = ["hot-reloading"]}
+assets_manager = {path = "../external/assets_manager", features = ["hot-reloading"]}
 
 ###############################################################################
 #                               BUILD SETTINGS
