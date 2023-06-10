@@ -148,16 +148,6 @@ impl App {
         self
     }
 
-    // TODO: Handle this somewhere else xd
-
-    // fn on_window_resize(event: &Event) -> bool {
-    //     match event {
-    //         Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
-    //         _ => {}
-    //     }
-    //     false
-    // }
-
     pub fn add_plugin<T: Plugin>(&mut self, plugin: T) -> &mut Self {
         plugin.build(self);
         self
