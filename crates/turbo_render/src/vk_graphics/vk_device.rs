@@ -1,5 +1,6 @@
 use ash::{self, vk};
 use glfw::Window;
+use gpu_alloc::{DeviceProperties, MemoryHeap, MemoryPropertyFlags, MemoryType};
 
 use crate::prelude::vk_utils::{debug::*, util::*};
 use turbo_core::prelude::trace::{info, warn};
@@ -75,7 +76,7 @@ const DEVICE_EXT: DeviceExtensions = DeviceExtensions {
 
 #[derive(Resource)]
 pub struct Device {
-    _entry: ash::Entry,
+    entry: ash::Entry,
     device: ash::Device,
     instance: ash::Instance,
     surface_details: SurfaceDetails,
@@ -111,7 +112,7 @@ impl Device {
             ash::extensions::khr::BufferDeviceAddress::new(&instance, &logical_device);
 
         Device {
-            _entry: entry,
+            entry,
             instance,
             surface_details,
             debug_utils_loader,
@@ -678,11 +679,109 @@ impl Device {
         }
     }
 
+    pub fn get_buffer_mem_requirements(&self, buffer: vk::Buffer) -> vk::MemoryRequirements {
+        unsafe { self.device.get_buffer_memory_requirements(buffer) }
+    }
+
     pub fn wait_idle(&self) {
         unsafe {
             self.device
                 .device_wait_idle()
                 .expect("Failed to wait device idle.")
         };
+    }
+
+    pub unsafe fn get_properties(&self) -> Result<DeviceProperties<'static>, vk::Result> {
+        use ash::vk::PhysicalDeviceFeatures2;
+
+        let version = self
+            .entry
+            .try_enumerate_instance_version()?
+            .unwrap_or(vk::make_api_version(0, 1, 0, 0));
+
+        let limits = self
+            .instance
+            .get_physical_device_properties(self.physical_device)
+            .limits;
+
+        let memory_properties = self
+            .instance
+            .get_physical_device_memory_properties(self.physical_device);
+
+        let buffer_device_address = if vk::api_version_major(version) >= 1
+            && vk::api_version_minor(version) >= 2
+        {
+            let mut features = PhysicalDeviceFeatures2::builder();
+            let mut bda_features = vk::PhysicalDeviceBufferDeviceAddressFeatures::default();
+            features.p_next =
+                &mut bda_features as *mut vk::PhysicalDeviceBufferDeviceAddressFeatures as *mut _;
+            self.instance
+                .get_physical_device_features2(self.physical_device, &mut features);
+            bda_features.buffer_device_address != 0
+        } else {
+            false
+        };
+
+        Ok(DeviceProperties {
+            max_memory_allocation_count: limits.max_memory_allocation_count,
+            max_memory_allocation_size: u64::max_value(), // FIXME: Can query this information if instance is v1.1
+            non_coherent_atom_size: limits.non_coherent_atom_size,
+            memory_types: memory_properties.memory_types
+                [..memory_properties.memory_type_count as usize]
+                .iter()
+                .map(|memory_type| MemoryType {
+                    props: Device::memory_properties_from_ash(memory_type.property_flags),
+                    heap: memory_type.heap_index,
+                })
+                .collect(),
+            memory_heaps: memory_properties.memory_heaps
+                [..memory_properties.memory_heap_count as usize]
+                .iter()
+                .map(|&memory_heap| MemoryHeap {
+                    size: memory_heap.size,
+                })
+                .collect(),
+            buffer_device_address,
+        })
+    }
+
+    pub fn memory_properties_from_ash(props: vk::MemoryPropertyFlags) -> MemoryPropertyFlags {
+        let mut result = MemoryPropertyFlags::empty();
+        if props.contains(vk::MemoryPropertyFlags::DEVICE_LOCAL) {
+            result |= MemoryPropertyFlags::DEVICE_LOCAL;
+        }
+        if props.contains(vk::MemoryPropertyFlags::HOST_VISIBLE) {
+            result |= MemoryPropertyFlags::HOST_VISIBLE;
+        }
+        if props.contains(vk::MemoryPropertyFlags::HOST_COHERENT) {
+            result |= MemoryPropertyFlags::HOST_COHERENT;
+        }
+        if props.contains(vk::MemoryPropertyFlags::HOST_CACHED) {
+            result |= MemoryPropertyFlags::HOST_CACHED;
+        }
+        if props.contains(vk::MemoryPropertyFlags::LAZILY_ALLOCATED) {
+            result |= MemoryPropertyFlags::LAZILY_ALLOCATED;
+        }
+        result
+    }
+
+    pub fn memory_properties_to_ash(props: MemoryPropertyFlags) -> vk::MemoryPropertyFlags {
+        let mut result = vk::MemoryPropertyFlags::empty();
+        if props.contains(MemoryPropertyFlags::DEVICE_LOCAL) {
+            result |= vk::MemoryPropertyFlags::DEVICE_LOCAL;
+        }
+        if props.contains(MemoryPropertyFlags::HOST_VISIBLE) {
+            result |= vk::MemoryPropertyFlags::HOST_VISIBLE;
+        }
+        if props.contains(MemoryPropertyFlags::HOST_COHERENT) {
+            result |= vk::MemoryPropertyFlags::HOST_COHERENT;
+        }
+        if props.contains(MemoryPropertyFlags::HOST_CACHED) {
+            result |= vk::MemoryPropertyFlags::HOST_CACHED;
+        }
+        if props.contains(MemoryPropertyFlags::LAZILY_ALLOCATED) {
+            result |= vk::MemoryPropertyFlags::LAZILY_ALLOCATED;
+        }
+        result
     }
 }
