@@ -1,23 +1,21 @@
 //#![warn(missing_docs)]
 //! This module is separated into its own crate to enable simple dynamic linking for BiTurbo, and should not be used directly
 
-pub mod app {
+pub mod turbo_app {
     //! Build biTurbo apps, create plugins, and read events.
-    pub use turbo_app::*;
+    pub use turbo_app::app;
+    pub use turbo_app::cmd_queue;
+    pub use turbo_app::plugin;
 }
 
-pub mod core {
+pub mod turbo_core {
     //! Core components and bundles for biTurbo.
-    pub use turbo_core::*;
+    pub use turbo_core;
 }
 
-pub mod window {
-    pub use turbo_window::*;
+pub mod turbo_window {
+    pub use turbo_window;
 }
 
 /// `use bi_turbo::prelude::*;` to import common components, bundles, and plugins.
-pub mod prelude {
-    pub use crate::app::*;
-    pub use crate::core::*;
-    pub use crate::window::*;
-}
+pub mod prelude;

@@ -8,7 +8,9 @@ edition = "2021"
 
 [dependencies]
 turbo_core = { path = "../turbo_core" }
-bevy_ecs = "0.10.1"
+bevy_ecs = "0.11.3"
+bevy_utils = "0.11.3"
+futures = { version = "0.3.29", features = ["thread-pool"] }
 
 ###############################################################################
 #                               BUILD SETTINGS
@@ -19,24 +21,24 @@ name = "turbo_app"
 crate-type = ["lib"]
 path = "src/lib.rs"
 
-[profile.dev]                           # Modify profile settings via config.
-opt-level = 0                           # Optimization level.
-debug = true                            # Include debug info.
-debug-assertions = true                 # Enables debug assertions.
-overflow-checks = true                  # Enables runtime integer overflow checks.
-lto = false                             # Sets link-time optimization.
-panic = 'unwind'                        # The panic strategy.
-incremental = true                      # Incremental compilation.
-codegen-units = 16                      # Number of code generation units.
-rpath = false                           # Sets the rpath linking option.
+[profile.dev] # Modify profile settings via config.
+opt-level = 0           # Optimization level.
+debug = true            # Include debug info.
+debug-assertions = true # Enables debug assertions.
+overflow-checks = true  # Enables runtime integer overflow checks.
+lto = false             # Sets link-time optimization.
+panic = 'unwind'        # The panic strategy.
+incremental = true      # Incremental compilation.
+codegen-units = 16      # Number of code generation units.
+rpath = false           # Sets the rpath linking option.
 
-[profile.release]                       # Modify profile settings via config.
-opt-level = 3                           # Optimization level.
-debug = true                           # Include debug info.
-debug-assertions = false                # Enables debug assertions.
-overflow-checks = false                 # Enables runtime integer overflow checks.
-lto = false                              # Sets link-time optimization.
-panic = 'abort'                         # The panic strategy.
-incremental = true                      # Incremental compilation.
-codegen-units = 1                       # Number of code generation units.
-rpath = false                           # Sets the rpath linking option.
+[profile.release] # Modify profile settings via config.
+opt-level = 3            # Optimization level.
+debug = true             # Include debug info.
+debug-assertions = false # Enables debug assertions.
+overflow-checks = false  # Enables runtime integer overflow checks.
+lto = false              # Sets link-time optimization.
+panic = 'abort'          # The panic strategy.
+incremental = true       # Incremental compilation.
+codegen-units = 1        # Number of code generation units.
+rpath = false            # Sets the rpath linking option.

@@ -1,34 +1,26 @@
 use crate::plugin::*;
-use turbo_core::prelude::*;
+use turbo_core::trace::{
+    tracing::{subscriber, Level},
+    tracing_subscriber::FmtSubscriber,
+};
 
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnMainPreUpdate;
+pub struct UpdateSchedule;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnMainUpdate;
+pub struct StartupSchedule;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnMainPostUpdate;
+pub struct CommandSchedule;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnStartup;
+pub struct EndFrameSchedule;
 
-#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct OnEvent;
-
-static mut APP: Option<Box<App>> = None;
-
-pub fn app() -> &'static mut App {
-    unsafe { APP.as_mut().unwrap() }
-}
-
-pub fn create_v0_engine() -> &'static mut App {
-    unsafe {
-        APP = Some(Box::new(App::new()));
-        APP.as_mut().unwrap()
-    }
+#[derive(Resource)]
+pub struct GState {
+    pub running: bool,
 }
 
 pub struct App {
@@ -40,30 +32,39 @@ impl App {
     pub fn new() -> Self {
         // Logging initialization
         let subscriber = FmtSubscriber::builder()
+            .with_line_number(true)
+            .with_thread_ids(true)
+            .without_time()
             .with_max_level(Level::TRACE)
             .finish();
 
         subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
         let mut world = World::default();
+        let global_state = GState { running: true };
 
         // Initialize resoureces
         world.init_resource::<Schedules>();
+        world.insert_resource(global_state);
 
         let mut schedules = world.resource_mut::<Schedules>();
 
-        // Pre update schedule
-        let pre_update = Schedule::new();
-        schedules.insert(OnMainPreUpdate, pre_update);
+        // startup
+        let startup = Schedule::new();
+        schedules.insert(StartupSchedule, startup);
 
-        // Post update schedule
-        let mut post_update = Schedule::new();
-        post_update.add_systems((apply_system_buffers, World::clear_trackers).chain());
-        schedules.insert(OnMainPostUpdate, post_update);
+        // command
+        let cmd = Schedule::new();
+        schedules.insert(CommandSchedule, cmd);
 
-        // On Event schedule
-        let on_event = Schedule::new();
-        schedules.insert(OnEvent, on_event);
+        // update
+        let update = Schedule::new();
+        schedules.insert(UpdateSchedule, update);
+
+        // end frame schedule (used for claering state, commands, etc)
+        let mut end = Schedule::new();
+        end.add_systems(World::clear_trackers);
+        schedules.insert(EndFrameSchedule, end);
 
         Self {
             world,
@@ -75,24 +76,21 @@ impl App {
         // ---------Timer for frame time and render time---------
         let mut current_time = std::time::Instant::now();
 
-        self.world.run_schedule(OnStartup);
+        self.world.run_schedule(StartupSchedule);
 
         while self.running {
-            self.world.run_schedule(OnMainPreUpdate);
+            self.world.run_schedule(CommandSchedule);
 
             // Calculate frame time (delta time)
             let new_time = std::time::Instant::now();
             let frame_time = (new_time - current_time).as_nanos();
-            let _delta_time = frame_time as f32 * 0.000000001;
+            let delta_time = frame_time as f32 * 0.000000001;
             current_time = new_time;
 
-            //trace!("Frame time: {delta_time}s");
+            turbo_core::trace::tracing::trace!("Frame time: {delta_time}s");
 
-            self.world.run_schedule(OnEvent);
-
-            self.world.run_schedule(OnMainUpdate);
-
-            self.world.run_schedule(OnMainPostUpdate);
+            self.world.run_schedule(UpdateSchedule);
+            self.world.run_schedule(EndFrameSchedule);
         }
     }
 
@@ -113,16 +111,7 @@ impl App {
         self
     }
 
-    // TODO: Handle this somewhere else xd
-
-    // fn on_window_resize(event: &Event) -> bool {
-    //     match event {
-    //         Event::WindowResize(width, height) => warn!("Renderer Should Have a Function \"OnWindowResize()\" with width: {width}, height: {height} "),
-    //         _ => {}
-    //     }
-    //     false
-    // }
-
+    // TODO: Serialize pugins
     pub fn add_plugin<T: Plugin>(&mut self, plugin: T) -> &mut Self {
         plugin.build(self);
         self
