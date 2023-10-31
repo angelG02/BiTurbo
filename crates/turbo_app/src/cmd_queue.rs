@@ -1,39 +1,19 @@
-use bevy_ecs::system::{Res, ResMut, Resource};
+use bevy_ecs::system::Resource;
 use bevy_ecs::world::World;
+use std::sync::{Arc, RwLock};
 use std::{collections::VecDeque, fmt::Debug};
 
-use crate::app::{CommandSchedule, GState, UpdateSchedule};
+use crate::app::{App, GState, UpdateSchedule};
 use crate::plugin::Plugin;
 use turbo_core::trace::tracing::info;
 
-type Task = Box<dyn FnOnce(&mut World) -> () + Send + Sync>;
-
-pub struct CmdQueuePlugin {
-    // Cmd options (serializable)
+pub enum CommandStatus {
+    Pending,
+    Ready,
+    None,
 }
 
-impl Plugin for CmdQueuePlugin {
-    fn build(&self, app: &mut crate::app::App) {
-        fn init(_ctx: &mut World) {
-            info!("INITIALIZED CMD QUEUE");
-        }
-
-        let cmd_init = Command {
-            command_type: CommandType::Close,
-            args: None,
-            task: Some(Box::new(init)),
-        };
-        let cmd_queue = CommandQueue::new(vec![cmd_init]);
-        app.world.insert_resource(cmd_queue);
-        app.add_systems(CommandSchedule, run_cli);
-        app.add_systems(UpdateSchedule, execute_commands);
-    }
-}
-
-//use bevy_reflect::Reflect;
-
-//#[derive(Reflect)]
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Debug)]
 pub enum CommandType {
     Exit,
     Help,
@@ -45,6 +25,35 @@ pub enum CommandType {
     Other,
 }
 
+type Task = Box<dyn FnOnce(&mut World) -> CommandStatus + Send + Sync>;
+
+pub struct CmdQueuePlugin {
+    // Cmd options (serializable)
+}
+
+impl Plugin for CmdQueuePlugin {
+    fn build(&self, app: &mut crate::app::App) {
+        fn init(_ctx: &mut World) -> CommandStatus {
+            info!("INITIALIZED CMD QUEUE");
+            CommandStatus::Ready
+        }
+
+        let cmd_init = Command {
+            command_type: CommandType::Close,
+            args: None,
+            task: Some(Box::new(init)),
+        };
+        let cmd_queue = CommandQueue::new(vec![cmd_init]);
+        app.world.insert_resource(cmd_queue);
+        //app.add_systems(CommandSchedule, run_cli);
+        app.add_systems(UpdateSchedule, execute_commands);
+    }
+}
+
+//use bevy_reflect::Reflect;
+
+//#[derive(Reflect)]
+
 // "assetserver get -from_server 127.0.0.1:7878 shaders/shader_challenge.vert"
 // "window open NewWindow 1080 720" -> Creates a window and an empty hall and inserts them into Renderer
 // "Gallery open NewGallery shader.vert shader.frag" -> Creates a gallery and sets it as the current gallery of the hall
@@ -54,6 +63,9 @@ pub enum CommandType {
 // type
 // function
 // args: Vec<String>
+
+// Implement Future for Command
+// poll() -> if task() returns CommandStatus::Ready -> Poll::Ready if not poll again? run task again?
 
 #[allow(dead_code)]
 pub struct Command {
@@ -84,8 +96,10 @@ impl Command {
     }
 
     pub fn exit() -> Command {
-        fn set_exit(world: &mut World) {
+        fn set_exit(world: &mut World) -> CommandStatus {
             world.get_resource_mut::<GState>().unwrap().running = false;
+
+            CommandStatus::Ready
         }
 
         Command {
@@ -139,8 +153,6 @@ impl CommandQueue {
 }
 
 pub fn execute_commands(context: &mut World) {
-    info!("Called!");
-
     let mut commands: VecDeque<Command> = vec![].into();
     {
         let mut cmd_queue = context.get_resource_mut::<CommandQueue>().unwrap();
@@ -152,8 +164,8 @@ pub fn execute_commands(context: &mut World) {
     for _ in 0..commands.len() {
         let command = commands.pop_front();
         if let Some(command) = command {
+            info!("Executing command: {command:?}");
             if let Some(task) = command.task {
-                info!("Called!");
                 task(context);
             }
         }
@@ -196,10 +208,24 @@ pub fn get_cli_command() -> Command {
     }
 }
 
-pub fn run_cli(global_state: Res<GState>, mut cmd_queue: ResMut<CommandQueue>) {
-    let next_command = get_cli_command();
-    info!("Command: {:?}", next_command);
-    info!("Command count: {}", cmd_queue.commands.len());
-    info!("Running?: {}", global_state.running);
-    cmd_queue.add_command(next_command);
+pub fn run_cli(context: Arc<RwLock<App>>) {
+    while context
+        .read()
+        .unwrap()
+        .world
+        .get_resource::<GState>()
+        .unwrap()
+        .running
+    {
+        let next_command = get_cli_command();
+        info!("Command: {:?}", next_command);
+        // send a sync event to the event loop and only execute it if the sync is false!!
+        let mut ctx_write_lock = context.write().unwrap();
+
+        ctx_write_lock
+            .world
+            .get_resource_mut::<CommandQueue>()
+            .unwrap()
+            .add_command(next_command);
+    }
 }

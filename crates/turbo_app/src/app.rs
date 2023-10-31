@@ -1,3 +1,5 @@
+use std::sync::{Arc, RwLock};
+
 use crate::plugin::*;
 use turbo_core::trace::{
     tracing::{subscriber, Level},
@@ -87,7 +89,7 @@ impl App {
             let delta_time = frame_time as f32 * 0.000000001;
             current_time = new_time;
 
-            turbo_core::trace::tracing::trace!("Frame time: {delta_time}s");
+            //turbo_core::trace::tracing::trace!("Frame time: {delta_time}s");
 
             self.world.run_schedule(UpdateSchedule);
             self.world.run_schedule(EndFrameSchedule);
@@ -116,4 +118,77 @@ impl App {
         plugin.build(self);
         self
     }
+}
+
+pub fn run(context: Arc<RwLock<App>>) {
+    let mut current_time = std::time::Instant::now();
+
+    {
+        context.write().unwrap().world.run_schedule(StartupSchedule);
+    }
+    // TODO: replace with event loop and recive command events
+    // if the CmdEvent is Sync (meaning commands are recived from cmd thread) then prevent the loop from executing
+    while context
+        .read()
+        .unwrap()
+        .world
+        .get_resource::<GState>()
+        .unwrap()
+        .running
+    {
+        let mut ctx_write_lock = context.write().unwrap();
+        ctx_write_lock.world.run_schedule(CommandSchedule);
+
+        // Calculate frame time (delta time)
+        let new_time = std::time::Instant::now();
+        let frame_time = (new_time - current_time).as_nanos();
+        let _delta_time = frame_time as f32 * 0.000000001;
+        current_time = new_time;
+
+        //turbo_core::trace::tracing::trace!("Frame time: {delta_time}s");
+
+        ctx_write_lock.world.run_schedule(UpdateSchedule);
+        ctx_write_lock.world.run_schedule(EndFrameSchedule);
+    }
+    // event_loop
+    //     .run(move |event, elwt| {
+    //         let mut context = context.write().unwrap();
+    //         let _res = executor::block_on(context.command_queue.execute());
+
+    //         elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
+    //         if !context.running {
+    //             elwt.exit();
+    //         }
+
+    //         match event {
+    //             winit::event::Event::WindowEvent {
+    //                 event,
+    //                 window_id: _,
+    //             } => match event {
+    //                 winit::event::WindowEvent::CloseRequested => elwt.exit(), // TODO: Drop window only
+    //                 winit::event::WindowEvent::RedrawRequested => {}
+    //                 _ => (),
+    //             },
+    //             winit::event::Event::UserEvent(event) => match event {
+    //                 WindowCommandEvent::Open(props) => {
+    //                     let window = winit::window::WindowBuilder::new()
+    //                         .with_inner_size(winit::dpi::Size::Physical(props.size))
+    //                         .with_title(props.name)
+    //                         .build(elwt)
+    //                         .expect("Could not create new window T-T");
+
+    //                     context.windows.insert(window.id(), window);
+    //                     info!("Created new window!")
+    //                 }
+    //                 WindowCommandEvent::Close(_win_id) => {}
+    //                 WindowCommandEvent::Exit() => elwt.exit(),
+    //             },
+    //             winit::event::Event::AboutToWait => {
+    //                 //window.request_redraw();
+    //             }
+
+    //             _ => (),
+    //         }
+    //     })
+    //     .unwrap();
 }
